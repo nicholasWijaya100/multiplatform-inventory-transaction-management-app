@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1076873568172",
+    "project_id": "database-tugas-akhir-inventory",
+    "storage_bucket": "database-tugas-akhir-inventory.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1076873568172:android:c7b2e4e05a1a64a01b6409",
+        "android_client_info": {
+          "package_name": "com.nicholaswijaya.inventory_app_revised"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZdIpEaQ9x3CxD4utgAfGU041UbcKI7Eo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
