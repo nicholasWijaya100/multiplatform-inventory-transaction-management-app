@@ -1,13 +1,22 @@
 import 'package:get_it/get_it.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:inventory_app_revised/blocs/supplier/supplier_bloc.dart';
+import 'package:inventory_app_revised/data/repositories/activity_repository.dart';
+import 'package:inventory_app_revised/data/repositories/sales_order_repository.dart';
+import 'package:inventory_app_revised/data/repositories/supplier_repository.dart';
 import '../blocs/category/category_bloc.dart';
+import '../blocs/customer/customer_bloc.dart';
 import '../blocs/product/product_bloc.dart';
+import '../blocs/purchase/purchase_bloc.dart';
+import '../blocs/sales/sales_order_bloc.dart';
 import '../blocs/users/users_bloc.dart';
 import '../blocs/warehouse/warehouse_bloc.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/category_repository.dart';
+import '../data/repositories/customer_repository.dart';
 import '../data/repositories/product_repository.dart';
+import '../data/repositories/purchase_repository.dart';
 import '../data/repositories/user_repository.dart';
 import '../blocs/auth/auth_bloc.dart';
 import '../blocs/dashboard/dashboard_bloc.dart';
@@ -65,6 +74,8 @@ void setupServiceLocator() {
         () => ProductBloc(
       productRepository: locator<ProductRepository>(),
       warehouseBloc: locator<WarehouseBloc>(),
+      activityRepository: locator<ActivityRepository>(),
+      currentUserId: locator<FirebaseAuth>().currentUser!.uid,
     ),
   );
 
@@ -91,6 +102,60 @@ void setupServiceLocator() {
   locator.registerFactory<WarehouseBloc>(
         () => WarehouseBloc(
       warehouseRepository: locator<WarehouseRepository>(),
+    ),
+  );
+
+  locator.registerLazySingleton<ActivityRepository>(
+        () => ActivityRepository(
+      firestore: locator<FirebaseFirestore>(),
+    ),
+  );
+
+  locator.registerFactory<SupplierBloc>(
+        () => SupplierBloc(
+      supplierRepository: locator<SupplierRepository>(),
+    ),
+  );
+
+  locator.registerLazySingleton<SupplierRepository>(
+        () => SupplierRepository(
+      firestore: locator<FirebaseFirestore>(),
+    ),
+  );
+
+  locator.registerLazySingleton<PurchaseRepository>(
+        () => PurchaseRepository(
+      firestore: locator<FirebaseFirestore>(),
+    ),
+  );
+
+  locator.registerFactory<PurchaseBloc>(
+        () => PurchaseBloc(
+      purchaseRepository: locator<PurchaseRepository>(),
+    ),
+  );
+
+  locator.registerLazySingleton<CustomerRepository>(
+        () => CustomerRepository(
+      firestore: locator<FirebaseFirestore>(),
+    ),
+  );
+
+  locator.registerFactory<CustomerBloc>(
+        () => CustomerBloc(
+      customerRepository: locator<CustomerRepository>(),
+    ),
+  );
+
+  locator.registerLazySingleton<SalesOrderRepository>(
+        () => SalesOrderRepository(
+      firestore: locator<FirebaseFirestore>(),
+    ),
+  );
+
+  locator.registerFactory<SalesOrderBloc>(
+        () => SalesOrderBloc(
+      salesOrderRepository: locator<SalesOrderRepository>(),
     ),
   );
 }

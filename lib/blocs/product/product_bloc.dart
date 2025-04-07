@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../data/models/product_model.dart';
+import '../../data/repositories/activity_repository.dart';
 import '../../data/repositories/product_repository.dart';
 import '../warehouse/warehouse_bloc.dart';
 
@@ -189,16 +190,22 @@ class ProductError extends ProductState {
 class ProductBloc extends Bloc<ProductEvent, ProductState> {
   final ProductRepository _productRepository;
   final WarehouseBloc _warehouseBloc;
+  final ActivityRepository _activityRepository;
   String? _currentSearchQuery;
   String? _currentCategoryFilter;
   bool _showInactive = false;
   static const int lowStockThreshold = 10;
+  final String _currentUserId;
 
   ProductBloc({
     required ProductRepository productRepository,
     required WarehouseBloc warehouseBloc,
+    required ActivityRepository activityRepository,
+    required String currentUserId,
   })  : _productRepository = productRepository,
         _warehouseBloc = warehouseBloc,
+        _activityRepository = activityRepository,
+        _currentUserId = currentUserId,
         super(ProductInitial()) {
     on<LoadProducts>(_onLoadProducts);
     on<SearchProducts>(_onSearchProducts);
@@ -287,7 +294,23 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       ) async {
     emit(ProductLoading());
     try {
-      await _productRepository.addProduct(event.product);
+      final product = await _productRepository.addProduct(event.product);
+
+      // Log activity
+      await _activityRepository.logActivity(
+        userId: _currentUserId,
+        action: 'Added new product',
+        category: 'inventory',
+        details: 'Added product: ${product.name}',
+        metadata: {
+          'productId': product.id,
+          'productName': product.name,
+          'category': product.category,
+          'initialStock': product.quantity,
+        },
+      );
+
+      _warehouseBloc.add(LoadWarehouses());
       add(LoadProducts());
     } catch (e) {
       emit(ProductError(e.toString()));

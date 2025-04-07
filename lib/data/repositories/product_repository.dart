@@ -8,6 +8,26 @@ class ProductRepository {
     FirebaseFirestore? firestore,
   }) : _firestore = firestore ?? FirebaseFirestore.instance;
 
+  Future<ProductModel> getProduct(String productId) async {
+    try {
+      final docSnapshot = await _firestore
+          .collection('products')
+          .doc(productId)
+          .get();
+
+      if (!docSnapshot.exists) {
+        throw Exception('Product not found');
+      }
+
+      final data = docSnapshot.data()!;
+      data['id'] = docSnapshot.id;
+
+      return ProductModel.fromJson(data);
+    } catch (e) {
+      throw Exception('Failed to fetch product: ${e.toString()}');
+    }
+  }
+
   Future<List<ProductModel>> getProducts({
     String? searchQuery,
     String? categoryFilter,

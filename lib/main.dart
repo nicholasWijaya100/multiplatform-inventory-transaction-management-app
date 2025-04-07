@@ -1,16 +1,21 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:inventory_app_revised/blocs/customer/customer_bloc.dart';
+import 'package:inventory_app_revised/blocs/sales/sales_order_bloc.dart';
 import 'package:inventory_app_revised/utils/navigation_controller.dart';
 import 'package:provider/provider.dart';
 import 'blocs/category/category_bloc.dart';
 import 'blocs/dashboard/dashboard_bloc.dart';
 import 'blocs/product/product_bloc.dart';
+import 'blocs/purchase/purchase_bloc.dart';
+import 'blocs/supplier/supplier_bloc.dart';
 import 'blocs/users/users_bloc.dart';
 import 'blocs/warehouse/warehouse_bloc.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/category_repository.dart';
 import 'data/repositories/product_repository.dart';
+import 'data/repositories/supplier_repository.dart';
 import 'data/repositories/user_repository.dart';
 import 'data/repositories/warehouse_repository.dart';
 import 'firebase_options.dart';
@@ -63,6 +68,20 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => locator<WarehouseBloc>(),
+        ),
+        BlocProvider(
+          create: (context) => SupplierBloc(
+            supplierRepository: locator<SupplierRepository>(),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => locator<PurchaseBloc>(),
+        ),
+        BlocProvider(
+          create: (context) => locator<CustomerBloc>(),
+        ),
+        BlocProvider(
+          create: (context) => locator<SalesOrderBloc>(),
         ),
       ],
       child: ChangeNotifierProvider(

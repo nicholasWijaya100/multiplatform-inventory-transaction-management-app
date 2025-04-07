@@ -42,6 +42,22 @@ class MockProductRepository extends _i1.Mock implements _i3.ProductRepository {
   }
 
   @override
+  _i4.Future<_i2.ProductModel> getProduct(String? productId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getProduct,
+          [productId],
+        ),
+        returnValue: _i4.Future<_i2.ProductModel>.value(_FakeProductModel_0(
+          this,
+          Invocation.method(
+            #getProduct,
+            [productId],
+          ),
+        )),
+      ) as _i4.Future<_i2.ProductModel>);
+
+  @override
   _i4.Future<List<_i2.ProductModel>> getProducts({
     String? searchQuery,
     String? categoryFilter,
