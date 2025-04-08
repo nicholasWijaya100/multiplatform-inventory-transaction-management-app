@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../utils/id_generator.dart';
 import '../models/sales_order_model.dart';
 
 class SalesOrderRepository {
@@ -50,13 +51,21 @@ class SalesOrderRepository {
 
   Future<SalesOrderModel> addSalesOrder(SalesOrderModel order) async {
     try {
-      final docRef = await _firestore.collection('sales_orders').add(
-        order.toFirestore(),
-      );
+      // Generate custom sales order ID
+      final customId = IdGenerator.generateSalesOrderId();
+
+      // Create a document with the custom ID
+      final docRef = _firestore.collection('sales_orders').doc(customId);
+
+      // Set the data with the custom ID
+      await docRef.set({
+        ...order.toFirestore(),
+        'customId': customId,  // Store the custom ID in the document as well
+      });
 
       final newDoc = await docRef.get();
       final data = newDoc.data()!;
-      data['id'] = newDoc.id;
+      data['id'] = customId;  // Use the custom ID
       return SalesOrderModel.fromJson(data);
     } catch (e) {
       throw Exception('Failed to add sales order: ${e.toString()}');
@@ -73,6 +82,17 @@ class SalesOrderRepository {
       });
     } catch (e) {
       throw Exception('Failed to update sales order status: ${e.toString()}');
+    }
+  }
+
+  Future<void> updateSalesOrderPaymentStatus(String orderId, bool isPaid) async {
+    try {
+      await _firestore.collection('sales_orders').doc(orderId).update({
+        'isPaid': isPaid,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to update sales order payment status: ${e.toString()}');
     }
   }
 

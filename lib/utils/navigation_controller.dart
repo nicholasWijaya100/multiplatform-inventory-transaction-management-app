@@ -5,6 +5,7 @@ import 'package:inventory_app_revised/presentation/screens/reports/purchase_repo
 import 'package:inventory_app_revised/presentation/screens/sales/sales_order_management_screen.dart';
 import 'package:inventory_app_revised/presentation/screens/suppliers/supplier_management_screen.dart';
 import '../presentation/screens/dashboard/dashboard_screen.dart';
+import '../presentation/screens/invoices/invoice_management_screen.dart';
 import '../presentation/screens/purchase_orders/purchase_orders_screen.dart';
 import '../presentation/screens/reports/stock_report_screen.dart';
 import '../presentation/screens/stock_transfer/stock_transfer_screen.dart';
@@ -55,6 +56,8 @@ class NavigationController extends ChangeNotifier {
         return const SalesOrderManagementScreen();
       case '/customers':
         return const CustomerManagementScreen();
+      case '/invoices':
+        return const InvoiceManagementScreen();
       default:
         return const DashboardScreen();
     }

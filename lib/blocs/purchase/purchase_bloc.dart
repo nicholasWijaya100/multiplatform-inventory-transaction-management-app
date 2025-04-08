@@ -78,6 +78,16 @@ class UpdatePurchaseOrderStatus extends PurchaseEvent {
   List<Object?> get props => [orderId, status];
 }
 
+class UpdatePurchaseOrderPaymentStatus extends PurchaseEvent {
+  final String orderId;
+  final bool isPaid;
+
+  const UpdatePurchaseOrderPaymentStatus(this.orderId, this.isPaid);
+
+  @override
+  List<Object?> get props => [orderId, isPaid];
+}
+
 // States
 abstract class PurchaseState extends Equatable {
   const PurchaseState();
@@ -152,6 +162,7 @@ class PurchaseBloc extends Bloc<PurchaseEvent, PurchaseState> {
     //on<ShowCompletedPurchaseOrders>(_onShowCompletedPurchaseOrders);
     on<AddPurchaseOrder>(_onAddPurchaseOrder);
     on<UpdatePurchaseOrderStatus>(_onUpdatePurchaseOrderStatus);
+    on<UpdatePurchaseOrderPaymentStatus>(_onUpdatePurchaseOrderPaymentStatus);
   }
 
   Future<void> _onLoadPurchaseOrders(
@@ -188,6 +199,23 @@ class PurchaseBloc extends Bloc<PurchaseEvent, PurchaseState> {
       ));
     } catch (e) {
       emit(PurchaseError(e.toString()));
+    }
+  }
+
+  Future<void> _onUpdatePurchaseOrderPaymentStatus(
+      UpdatePurchaseOrderPaymentStatus event,
+      Emitter<PurchaseState> emit,
+      ) async {
+    emit(PurchaseLoading());
+    try {
+      await _purchaseRepository.updatePurchaseOrderPaymentStatus(
+        event.orderId,
+        event.isPaid,
+      );
+      add(LoadPurchaseOrders());
+    } catch (e) {
+      emit(PurchaseError(e.toString()));
+      add(LoadPurchaseOrders());
     }
   }
 

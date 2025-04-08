@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../../data/models/sales_order_model.dart';
+import '../../../data/models/invoice_model.dart';
 import '../../../utils/formatter.dart';
 
-class SalesOrderDetailsDialog extends StatelessWidget {
-  final SalesOrderModel order;
+class InvoiceDetailsDialog extends StatelessWidget {
+  final InvoiceModel invoice;
 
-  const SalesOrderDetailsDialog({
+  const InvoiceDetailsDialog({
     Key? key,
-    required this.order,
+    required this.invoice,
   }) : super(key: key);
 
   @override
@@ -24,23 +24,24 @@ class SalesOrderDetailsDialog extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
+                Flexible(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Sales Order #${order.id}',
+                        'Invoice #${invoice.id}',
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
-                        overflow: TextOverflow.ellipsis, // Prevents overflow
+                        overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        'Created on ${Formatters.formatDateTime(order.createdAt)}',
+                        'Created on ${Formatters.formatDateTime(invoice.createdAt)}',
                         style: TextStyle(
                           color: Colors.grey[600],
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -60,16 +61,16 @@ class SalesOrderDetailsDialog extends StatelessWidget {
                 vertical: 6,
               ),
               decoration: BoxDecoration(
-                color: _getStatusColor(order.status).withOpacity(0.1),
+                color: _getStatusColor(invoice.status).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: _getStatusColor(order.status).withOpacity(0.5),
+                  color: _getStatusColor(invoice.status).withOpacity(0.5),
                 ),
               ),
               child: Text(
-                order.status[0].toUpperCase() + order.status.substring(1),
+                invoice.status[0].toUpperCase() + invoice.status.substring(1),
                 style: TextStyle(
-                  color: _getStatusColor(order.status),
+                  color: _getStatusColor(invoice.status),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -90,21 +91,21 @@ class SalesOrderDetailsDialog extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Customer',
+                              'Customer Information',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 8),
-                            Text(order.customerName),
+                            Text(invoice.customerName),
                           ],
                         ),
                       ),
                     ),
                     const SizedBox(height: 24),
 
-                    // Order Details
+                    // Related Order
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -112,7 +113,29 @@ class SalesOrderDetailsDialog extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Order Details',
+                              'Related Sales Order',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text('Sales Order #${invoice.salesOrderId}'),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Invoice Details
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Invoice Details',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -121,25 +144,31 @@ class SalesOrderDetailsDialog extends StatelessWidget {
                             const SizedBox(height: 16),
                             _buildDetailRow(
                               'Payment Terms',
-                              order.paymentTerms ?? 'N/A',
+                              invoice.paymentTerms ?? 'N/A',
+                            ),
+                            const SizedBox(height: 16),
+                            _buildDetailRow(
+                              'Due Date',
+                              Formatters.formatDate(invoice.dueDate),
+                              valueStyle: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: invoice.isOverdue && !invoice.isPaid ? Colors.red : null,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             _buildDetailRow(
                               'Payment Status',
-                              order.isPaid ? 'Paid' : 'Unpaid',
+                              invoice.isPaid ? 'Paid' : 'Unpaid',
+                              valueStyle: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: invoice.isPaid ? Colors.green : null,
+                              ),
                             ),
-                            const SizedBox(height: 16),
-                            _buildDetailRow(
-                              'Expected Delivery',
-                              order.deliveryDate != null
-                                  ? Formatters.formatDate(order.deliveryDate!)
-                                  : 'Not set',
-                            ),
-                            if (order.shippedDate != null) ...[
+                            if (invoice.isPaid && invoice.paidDate != null) ...[
                               const SizedBox(height: 16),
                               _buildDetailRow(
-                                'Shipped Date',
-                                Formatters.formatDate(order.shippedDate!),
+                                'Paid On',
+                                Formatters.formatDate(invoice.paidDate!),
                               ),
                             ],
                           ],
@@ -166,11 +195,11 @@ class SalesOrderDetailsDialog extends StatelessWidget {
                             ListView.separated(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              itemCount: order.items.length,
+                              itemCount: invoice.items.length,
                               separatorBuilder: (context, index) =>
                               const Divider(),
                               itemBuilder: (context, index) {
-                                final item = order.items[index];
+                                final item = invoice.items[index];
                                 return ListTile(
                                   title: Text(
                                     item.productName,
@@ -182,7 +211,7 @@ class SalesOrderDetailsDialog extends StatelessWidget {
                                     '${item.quantity} x ${Formatters.formatCurrency(item.unitPrice)}',
                                   ),
                                   trailing: Text(
-                                    Formatters.formatCurrency(item.totalPrice),
+                                    Formatters.formatCurrency(item.total),
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -191,27 +220,29 @@ class SalesOrderDetailsDialog extends StatelessWidget {
                               },
                             ),
                             const Divider(height: 32),
+
+                            // Summary
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    const Text(
-                                      'Total Amount',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey,
+                                SizedBox(
+                                  width: 200,
+                                  child: Column(
+                                    children: [
+                                      _buildSummaryRow('Subtotal', Formatters.formatCurrency(invoice.subtotal)),
+                                      const SizedBox(height: 8),
+                                      _buildSummaryRow('Tax', Formatters.formatCurrency(invoice.tax)),
+                                      const Divider(),
+                                      _buildSummaryRow(
+                                        'Total',
+                                        Formatters.formatCurrency(invoice.total),
+                                        valueStyle: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
+                                        ),
                                       ),
-                                    ),
-                                    Text(
-                                      Formatters.formatCurrency(order.totalAmount),
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
@@ -220,7 +251,7 @@ class SalesOrderDetailsDialog extends StatelessWidget {
                       ),
                     ),
 
-                    if (order.notes?.isNotEmpty ?? false) ...[
+                    if (invoice.notes?.isNotEmpty ?? false) ...[
                       const SizedBox(height: 24),
                       Card(
                         child: Padding(
@@ -236,7 +267,7 @@ class SalesOrderDetailsDialog extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              Text(order.notes!),
+                              Text(invoice.notes!),
                             ],
                           ),
                         ),
@@ -250,8 +281,28 @@ class SalesOrderDetailsDialog extends StatelessWidget {
             // Footer
             const SizedBox(height: 24),
             Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // Placeholder for printing invoice functionality
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Print functionality not implemented yet'),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.print),
+                  label: const Text('Print Invoice'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[900],
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
                 OutlinedButton(
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Close'),
@@ -264,7 +315,7 @@ class SalesOrderDetailsDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _buildDetailRow(String label, String value, {TextStyle? valueStyle}) {
     return Row(
       children: [
         Text(
@@ -276,7 +327,27 @@ class SalesOrderDetailsDialog extends StatelessWidget {
         const Spacer(),
         Text(
           value,
-          style: const TextStyle(
+          style: valueStyle ?? const TextStyle(
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value, {TextStyle? valueStyle}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey[700],
+          ),
+        ),
+        Text(
+          value,
+          style: valueStyle ?? const TextStyle(
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -288,16 +359,16 @@ class SalesOrderDetailsDialog extends StatelessWidget {
     switch (status) {
       case 'draft':
         return Colors.grey;
-      case 'pending':
-        return Colors.orange;
-      case 'confirmed':
+      case 'sent':
         return Colors.blue;
-      case 'shipped':
-        return Colors.purple;
-      case 'delivered':
+      case 'paid':
         return Colors.green;
-      case 'cancelled':
+      case 'overdue':
         return Colors.red;
+      case 'cancelled':
+        return Colors.red[300]!;
+      case 'refunded':
+        return Colors.purple;
       default:
         return Colors.grey;
     }

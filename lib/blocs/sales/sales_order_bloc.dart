@@ -59,6 +59,16 @@ class UpdateSalesOrderStatus extends SalesOrderEvent {
   List<Object?> get props => [orderId, status];
 }
 
+class UpdateSalesOrderPaymentStatus extends SalesOrderEvent {
+  final String orderId;
+  final bool isPaid;
+
+  const UpdateSalesOrderPaymentStatus(this.orderId, this.isPaid);
+
+  @override
+  List<Object?> get props => [orderId, isPaid];
+}
+
 // States
 abstract class SalesOrderState extends Equatable {
   const SalesOrderState();
@@ -128,6 +138,7 @@ class SalesOrderBloc extends Bloc<SalesOrderEvent, SalesOrderState> {
     on<FilterSalesOrdersByStatus>(_onFilterSalesOrdersByStatus);
     on<AddSalesOrder>(_onAddSalesOrder);
     on<UpdateSalesOrderStatus>(_onUpdateSalesOrderStatus);
+    on<UpdateSalesOrderPaymentStatus>(_onUpdateSalesOrderPaymentStatus);
   }
 
   Future<void> _onLoadSalesOrders(
@@ -213,6 +224,23 @@ class SalesOrderBloc extends Bloc<SalesOrderEvent, SalesOrderState> {
       await _salesOrderRepository.updateSalesOrderStatus(
         event.orderId,
         event.status,
+      );
+      add(LoadSalesOrders());
+    } catch (e) {
+      emit(SalesOrderError(e.toString()));
+      add(LoadSalesOrders());
+    }
+  }
+
+  Future<void> _onUpdateSalesOrderPaymentStatus(
+      UpdateSalesOrderPaymentStatus event,
+      Emitter<SalesOrderState> emit,
+      ) async {
+    emit(SalesOrderLoading());
+    try {
+      await _salesOrderRepository.updateSalesOrderPaymentStatus(
+        event.orderId,
+        event.isPaid,
       );
       add(LoadSalesOrders());
     } catch (e) {

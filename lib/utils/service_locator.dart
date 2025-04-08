@@ -7,6 +7,7 @@ import 'package:inventory_app_revised/data/repositories/sales_order_repository.d
 import 'package:inventory_app_revised/data/repositories/supplier_repository.dart';
 import '../blocs/category/category_bloc.dart';
 import '../blocs/customer/customer_bloc.dart';
+import '../blocs/invoice/invoice_bloc.dart';
 import '../blocs/product/product_bloc.dart';
 import '../blocs/purchase/purchase_bloc.dart';
 import '../blocs/sales/sales_order_bloc.dart';
@@ -15,6 +16,7 @@ import '../blocs/warehouse/warehouse_bloc.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/category_repository.dart';
 import '../data/repositories/customer_repository.dart';
+import '../data/repositories/invoice_repository.dart';
 import '../data/repositories/product_repository.dart';
 import '../data/repositories/purchase_repository.dart';
 import '../data/repositories/user_repository.dart';
@@ -156,6 +158,18 @@ void setupServiceLocator() {
   locator.registerFactory<SalesOrderBloc>(
         () => SalesOrderBloc(
       salesOrderRepository: locator<SalesOrderRepository>(),
+    ),
+  );
+
+  locator.registerLazySingleton<InvoiceRepository>(
+        () => InvoiceRepository(
+      firestore: locator<FirebaseFirestore>(),
+    ),
+  );
+
+  locator.registerFactory<InvoiceBloc>(
+        () => InvoiceBloc(
+      invoiceRepository: locator<InvoiceRepository>(),
     ),
   );
 }

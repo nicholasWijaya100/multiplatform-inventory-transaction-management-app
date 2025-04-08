@@ -7,6 +7,7 @@ import 'package:inventory_app_revised/utils/navigation_controller.dart';
 import 'package:provider/provider.dart';
 import 'blocs/category/category_bloc.dart';
 import 'blocs/dashboard/dashboard_bloc.dart';
+import 'blocs/invoice/invoice_bloc.dart';
 import 'blocs/product/product_bloc.dart';
 import 'blocs/purchase/purchase_bloc.dart';
 import 'blocs/supplier/supplier_bloc.dart';
@@ -82,6 +83,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => locator<SalesOrderBloc>(),
+        ),
+        BlocProvider(
+          create: (context) => locator<InvoiceBloc>(),
         ),
       ],
       child: ChangeNotifierProvider(

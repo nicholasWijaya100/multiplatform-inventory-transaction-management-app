@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../utils/id_generator.dart';
 import '../models/purchase_order_model.dart';
 
 class PurchaseRepository {
@@ -50,16 +51,23 @@ class PurchaseRepository {
 
   Future<PurchaseOrderModel> addPurchaseOrder(PurchaseOrderModel order) async {
     try {
-      final docRef = await _firestore.collection('purchase_orders').add(
-        order.toFirestore(),
-      );
+      // Generate custom purchase order ID
+      final customId = IdGenerator.generatePurchaseOrderId();
+
+      // Create a document with the custom ID
+      final docRef = _firestore.collection('purchase_orders').doc(customId);
+
+      // Set the data with the custom ID
+      await docRef.set({
+        ...order.toFirestore(),
+        'customId': customId,  // Store the custom ID in the document as well
+      });
 
       final newDoc = await docRef.get();
       final data = newDoc.data()!;
-      data['id'] = newDoc.id;
+      data['id'] = customId;  // Use the custom ID
       return PurchaseOrderModel.fromJson(data);
     } catch (e) {
-      print('Error adding purchase order: $e');
       throw Exception('Failed to add purchase order: ${e.toString()}');
     }
   }
@@ -84,6 +92,17 @@ class PurchaseRepository {
       });
     } catch (e) {
       throw Exception('Failed to mark purchase order as paid: ${e.toString()}');
+    }
+  }
+
+  Future<void> updatePurchaseOrderPaymentStatus(String orderId, bool isPaid) async {
+    try {
+      await _firestore.collection('purchase_orders').doc(orderId).update({
+        'isPaid': isPaid,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to update purchase order payment status: ${e.toString()}');
     }
   }
 

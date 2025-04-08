@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../utils/id_generator.dart';
 import '../models/invoice_model.dart';
 
 class InvoiceRepository {
@@ -55,13 +56,21 @@ class InvoiceRepository {
 
   Future<InvoiceModel> addInvoice(InvoiceModel invoice) async {
     try {
-      final docRef = await _firestore.collection('invoices').add(
-        invoice.toFirestore(),
-      );
+      // Generate custom invoice ID
+      final customId = IdGenerator.generateInvoiceId();
+
+      // Create a document with the custom ID
+      final docRef = _firestore.collection('invoices').doc(customId);
+
+      // Set the data with the custom ID
+      await docRef.set({
+        ...invoice.toFirestore(),
+        'customId': customId,  // Store the custom ID in the document as well
+      });
 
       final newDoc = await docRef.get();
       final data = newDoc.data()!;
-      data['id'] = newDoc.id;
+      data['id'] = customId;
       return InvoiceModel.fromJson(data);
     } catch (e) {
       throw Exception('Failed to add invoice: ${e.toString()}');
@@ -89,6 +98,25 @@ class InvoiceRepository {
       });
     } catch (e) {
       throw Exception('Failed to mark invoice as paid: ${e.toString()}');
+    }
+  }
+
+  Future<InvoiceModel> getInvoice(String invoiceId) async {
+    try {
+      final docSnapshot = await _firestore
+          .collection('invoices')
+          .doc(invoiceId)
+          .get();
+
+      if (!docSnapshot.exists) {
+        throw Exception('Invoice not found');
+      }
+
+      final data = docSnapshot.data()!;
+      data['id'] = docSnapshot.id;
+      return InvoiceModel.fromJson(data);
+    } catch (e) {
+      throw Exception('Failed to fetch invoice: ${e.toString()}');
     }
   }
 

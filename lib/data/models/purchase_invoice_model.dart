@@ -1,52 +1,54 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-part 'invoice_model.freezed.dart';
-part 'invoice_model.g.dart';
+part 'purchase_invoice_model.freezed.dart';
+part 'purchase_invoice_model.g.dart';
 
-enum InvoiceStatus {
+enum PurchaseInvoiceStatus {
   draft,
-  sent,
+  received,
+  pending,
   paid,
   overdue,
   cancelled,
-  refunded
+  disputed
 }
 
 @freezed
-class InvoiceModel with _$InvoiceModel {
-  const InvoiceModel._();
+class PurchaseInvoiceModel with _$PurchaseInvoiceModel {
+  const PurchaseInvoiceModel._(); // Base constructor for custom methods
 
-  const factory InvoiceModel({
+  const factory PurchaseInvoiceModel({
     required String id,
     String? customId,
-    required String customerId,
-    required String customerName,
-    required String salesOrderId,
+    required String supplierId,
+    required String supplierName,
+    required String purchaseOrderId,
     required String status,
-    required List<InvoiceItem> items,
+    required List<PurchaseInvoiceItem> items,
     required double subtotal,
     required double tax,
     required double total,
     required DateTime dueDate,
     String? notes,
     String? paymentTerms,
+    String? invoiceNumber, // Supplier's invoice number
     @Default(false) bool isPaid,
     DateTime? paidDate,
     required DateTime createdAt,
     required DateTime updatedAt,
-  }) = _InvoiceModel;
+  }) = _PurchaseInvoiceModel;
 
-  factory InvoiceModel.fromJson(Map<String, dynamic> json) {
-    return InvoiceModel(
+  factory PurchaseInvoiceModel.fromJson(Map<String, dynamic> json) {
+    return PurchaseInvoiceModel(
       id: json['id'] as String? ?? '',
       customId: json['customId'] as String?,
-      customerId: json['customerId'] as String,
-      customerName: json['customerName'] as String,
-      salesOrderId: json['salesOrderId'] as String,
+      supplierId: json['supplierId'] as String,
+      supplierName: json['supplierName'] as String,
+      purchaseOrderId: json['purchaseOrderId'] as String,
       status: json['status'] as String,
       items: (json['items'] as List<dynamic>)
-          .map((item) => InvoiceItem.fromJson(item as Map<String, dynamic>))
+          .map((item) => PurchaseInvoiceItem.fromJson(item as Map<String, dynamic>))
           .toList(),
       subtotal: (json['subtotal'] as num).toDouble(),
       tax: (json['tax'] as num).toDouble(),
@@ -54,6 +56,7 @@ class InvoiceModel with _$InvoiceModel {
       dueDate: (json['dueDate'] as Timestamp).toDate(),
       notes: json['notes'] as String?,
       paymentTerms: json['paymentTerms'] as String?,
+      invoiceNumber: json['invoiceNumber'] as String?,
       isPaid: json['isPaid'] as bool? ?? false,
       paidDate: json['paidDate'] != null
           ? (json['paidDate'] as Timestamp).toDate()
@@ -66,9 +69,9 @@ class InvoiceModel with _$InvoiceModel {
   Map<String, dynamic> toFirestore() {
     return {
       'customId': customId,
-      'customerId': customerId,
-      'customerName': customerName,
-      'salesOrderId': salesOrderId,
+      'supplierId': supplierId,
+      'supplierName': supplierName,
+      'purchaseOrderId': purchaseOrderId,
       'status': status,
       'items': items.map((item) => item.toJson()).toList(),
       'subtotal': subtotal,
@@ -77,6 +80,7 @@ class InvoiceModel with _$InvoiceModel {
       'dueDate': Timestamp.fromDate(dueDate),
       'notes': notes,
       'paymentTerms': paymentTerms,
+      'invoiceNumber': invoiceNumber,
       'isPaid': isPaid,
       'paidDate': paidDate != null ? Timestamp.fromDate(paidDate!) : null,
       'createdAt': Timestamp.fromDate(createdAt),
@@ -88,18 +92,18 @@ class InvoiceModel with _$InvoiceModel {
 }
 
 @freezed
-class InvoiceItem with _$InvoiceItem {
-  const factory InvoiceItem({
+class PurchaseInvoiceItem with _$PurchaseInvoiceItem {
+  const factory PurchaseInvoiceItem({
     required String productId,
     required String productName,
     required int quantity,
     required double unitPrice,
     required double total,
     String? description,
-  }) = _InvoiceItem;
+  }) = _PurchaseInvoiceItem;
 
-  factory InvoiceItem.fromJson(Map<String, dynamic> json) =>
-      InvoiceItem(
+  factory PurchaseInvoiceItem.fromJson(Map<String, dynamic> json) =>
+      PurchaseInvoiceItem(
         productId: json['productId'] as String,
         productName: json['productName'] as String,
         quantity: json['quantity'] as int,
