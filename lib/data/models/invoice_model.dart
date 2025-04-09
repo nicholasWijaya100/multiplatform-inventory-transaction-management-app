@@ -5,12 +5,13 @@ part 'invoice_model.freezed.dart';
 part 'invoice_model.g.dart';
 
 enum InvoiceStatus {
-  draft,
-  sent,
-  paid,
-  overdue,
-  cancelled,
-  refunded
+  draft,       // Just created, not yet sent to customer
+  sent,        // Invoice has been sent to customer
+  paid,        // Invoice has been paid
+  overdue,     // Payment date has passed without payment
+  disputed,    // There's an issue with the invoice that needs resolution
+  refunded,    // Payment was made but then refunded (e.g. for canceled orders)
+  cancelled    // Invoice is no longer valid/active
 }
 
 @freezed

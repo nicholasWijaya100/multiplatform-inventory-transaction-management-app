@@ -188,6 +188,14 @@ class MobileDrawer extends StatelessWidget {
                             isSelected:
                             navigationController.currentRoute == '/suppliers',
                           ),
+                          _buildMenuItem(
+                            context: context,
+                            icon: Icons.receipt_long_outlined,
+                            title: 'Purchase Invoices',
+                            route: '/purchase-invoices',
+                            isSelected:
+                            navigationController.currentRoute == '/purchase-invoices',
+                          ),
                         ],
 
                         // Reports section

@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../data/models/purchase_order_model.dart';
 import '../../data/repositories/purchase_repository.dart';
+import '../../utils/service_locator.dart';
+import '../purchase_invoice/purchase_invoice_bloc.dart';
 
 // Events
 abstract class PurchaseEvent extends Equatable {
@@ -277,6 +279,18 @@ class PurchaseBloc extends Bloc<PurchaseEvent, PurchaseState> {
         event.orderId,
         event.status,
       );
+
+      // Notify the purchase invoice bloc about the status change
+      if (event.status == 'cancelled') {
+        try {
+          final purchaseInvoiceBloc = locator<PurchaseInvoiceBloc>();
+          purchaseInvoiceBloc.add(PurchaseOrderStatusChanged(event.orderId, event.status));
+        } catch (e) {
+          // Log error but don't change purchase order state
+          print('Error notifying purchase invoice bloc: $e');
+        }
+      }
+
       add(LoadPurchaseOrders());
     } catch (e) {
       emit(PurchaseError(e.toString()));

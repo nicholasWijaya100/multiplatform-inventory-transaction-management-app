@@ -10,6 +10,7 @@ import '../blocs/customer/customer_bloc.dart';
 import '../blocs/invoice/invoice_bloc.dart';
 import '../blocs/product/product_bloc.dart';
 import '../blocs/purchase/purchase_bloc.dart';
+import '../blocs/purchase_invoice/purchase_invoice_bloc.dart';
 import '../blocs/sales/sales_order_bloc.dart';
 import '../blocs/users/users_bloc.dart';
 import '../blocs/warehouse/warehouse_bloc.dart';
@@ -18,6 +19,7 @@ import '../data/repositories/category_repository.dart';
 import '../data/repositories/customer_repository.dart';
 import '../data/repositories/invoice_repository.dart';
 import '../data/repositories/product_repository.dart';
+import '../data/repositories/purchase_invoice_repository.dart';
 import '../data/repositories/purchase_repository.dart';
 import '../data/repositories/user_repository.dart';
 import '../blocs/auth/auth_bloc.dart';
@@ -170,6 +172,18 @@ void setupServiceLocator() {
   locator.registerFactory<InvoiceBloc>(
         () => InvoiceBloc(
       invoiceRepository: locator<InvoiceRepository>(),
+    ),
+  );
+
+  locator.registerLazySingleton<PurchaseInvoiceRepository>(
+        () => PurchaseInvoiceRepository(
+      firestore: locator<FirebaseFirestore>(),
+    ),
+  );
+
+  locator.registerFactory<PurchaseInvoiceBloc>(
+        () => PurchaseInvoiceBloc(
+      purchaseInvoiceRepository: locator<PurchaseInvoiceRepository>(),
     ),
   );
 }

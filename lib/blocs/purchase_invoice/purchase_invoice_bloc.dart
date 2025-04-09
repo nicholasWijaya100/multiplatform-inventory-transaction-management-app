@@ -89,6 +89,16 @@ class UpdatePurchaseOrderPayment extends PurchaseInvoiceEvent {
   List<Object?> get props => [purchaseOrderId, isPaid];
 }
 
+class PurchaseOrderStatusChanged extends PurchaseInvoiceEvent {
+  final String purchaseOrderId;
+  final String newStatus;
+
+  const PurchaseOrderStatusChanged(this.purchaseOrderId, this.newStatus);
+
+  @override
+  List<Object?> get props => [purchaseOrderId, newStatus];
+}
+
 // States
 abstract class PurchaseInvoiceState extends Equatable {
   const PurchaseInvoiceState();
@@ -276,10 +286,23 @@ class PurchaseInvoiceBloc
       ) async {
     emit(PurchaseInvoiceLoading());
     try {
-      await _purchaseInvoiceRepository.updatePurchaseInvoiceStatus(
-        event.invoiceId,
-        event.status,
-      );
+      // If the new status is 'paid', set the paid date as well
+      if (event.status == PurchaseInvoiceStatus.paid.name) {
+        await _purchaseInvoiceRepository.markAsPaid(event.invoiceId);
+
+        // If there's a sales order, update its payment status
+        final invoice = await _purchaseInvoiceRepository.getPurchaseInvoice(event.invoiceId);
+        if (invoice.purchaseOrderId.isNotEmpty) {
+          add(UpdatePurchaseOrderPayment(invoice.purchaseOrderId, true));
+        }
+      } else {
+        // Handle regular status update
+        await _purchaseInvoiceRepository.updatePurchaseInvoiceStatus(
+          event.invoiceId,
+          event.status,
+        );
+      }
+
       add(LoadPurchaseInvoices());
     } catch (e) {
       emit(PurchaseInvoiceError(e.toString()));
@@ -330,13 +353,44 @@ class PurchaseInvoiceBloc
     }
   }
 
+  Future<void> _onPurchaseOrderStatusChanged(
+      PurchaseOrderStatusChanged event,
+      Emitter<PurchaseInvoiceState> emit,
+      ) async {
+    try {
+      // Get all invoices for this purchase order
+      final invoices = await _purchaseInvoiceRepository.getInvoicesByPurchaseOrder(event.purchaseOrderId);
+
+      if (event.newStatus == 'cancelled') {
+        for (var invoice in invoices) {
+          if (invoice.isPaid) {
+            // Mark paid invoices as refunded
+            await _purchaseInvoiceRepository.updatePurchaseInvoiceStatus(
+                invoice.id,
+                PurchaseInvoiceStatus.refunded.name
+            );
+          } else {
+            // Mark unpaid invoices as cancelled
+            await _purchaseInvoiceRepository.updatePurchaseInvoiceStatus(
+                invoice.id,
+                PurchaseInvoiceStatus.cancelled.name
+            );
+          }
+        }
+      }
+
+      // Reload invoices
+      add(LoadPurchaseInvoices());
+    } catch (e) {
+      emit(PurchaseInvoiceError(e.toString()));
+    }
+  }
+
   // Helper methods for status
   List<String> getNextPossibleStatuses(String currentStatus) {
     switch (currentStatus) {
       case 'draft':
-        return ['received', 'cancelled'];
-      case 'received':
-        return ['pending', 'cancelled', 'disputed'];
+        return ['pending', 'cancelled'];
       case 'pending':
         return ['paid', 'overdue', 'disputed', 'cancelled'];
       case 'overdue':
@@ -344,6 +398,8 @@ class PurchaseInvoiceBloc
       case 'disputed':
         return ['pending', 'paid', 'cancelled'];
       case 'paid':
+        return ['refunded']; // Only paid invoices can be refunded
+      case 'refunded':
       case 'cancelled':
         return [];
       default:

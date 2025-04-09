@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../../data/models/invoice_model.dart';
+import '../../../data/models/purchase_invoice_model.dart';
 import '../../../utils/formatter.dart';
-import 'invoice_details_dialog.dart';
+import 'purchase_invoice_details_dialog.dart';
 
-class InvoiceList extends StatelessWidget {
-  final List<InvoiceModel> invoices;
-  final Function(InvoiceModel, String) onStatusUpdate;
+class PurchaseInvoiceList extends StatelessWidget {
+  final List<PurchaseInvoiceModel> invoices;
+  final Function(PurchaseInvoiceModel, String) onStatusUpdate;
 
-  const InvoiceList({
+  const PurchaseInvoiceList({
     Key? key,
     required this.invoices,
     required this.onStatusUpdate,
@@ -21,7 +21,7 @@ class InvoiceList extends StatelessWidget {
       return ListView.builder(
         itemCount: invoices.length,
         itemBuilder: (context, index) {
-          return _InvoiceCard(
+          return _PurchaseInvoiceCard(
             invoice: invoices[index],
             onStatusUpdate: onStatusUpdate,
           );
@@ -33,18 +33,18 @@ class InvoiceList extends StatelessWidget {
     return Card(
       child: SingleChildScrollView(
         child: PaginatedDataTable(
-          header: const Text('Invoices'),
+          header: const Text('Purchase Invoices'),
           rowsPerPage: 10,
           columns: [
             const DataColumn(label: Text('Invoice #')),
-            const DataColumn(label: Text('Customer')),
+            const DataColumn(label: Text('Supplier')),
             const DataColumn(label: Text('Amount')),
             const DataColumn(label: Text('Due Date')),
             const DataColumn(label: Text('Status')),
             const DataColumn(label: Text('Payment')),
             const DataColumn(label: Text('Actions')),
           ],
-          source: _InvoiceDataSource(
+          source: _PurchaseInvoiceDataSource(
             invoices: invoices,
             onStatusUpdate: onStatusUpdate,
             onViewDetails: (invoice) => _showInvoiceDetails(context, invoice),
@@ -54,20 +54,20 @@ class InvoiceList extends StatelessWidget {
     );
   }
 
-  void _showInvoiceDetails(BuildContext context, InvoiceModel invoice) {
+  void _showInvoiceDetails(BuildContext context, PurchaseInvoiceModel invoice) {
     showDialog(
       context: context,
-      builder: (context) => InvoiceDetailsDialog(invoice: invoice),
+      builder: (context) => PurchaseInvoiceDetailsDialog(invoice: invoice),
     );
   }
 }
 
-class _InvoiceDataSource extends DataTableSource {
-  final List<InvoiceModel> invoices;
-  final Function(InvoiceModel, String) onStatusUpdate;
-  final Function(InvoiceModel) onViewDetails;
+class _PurchaseInvoiceDataSource extends DataTableSource {
+  final List<PurchaseInvoiceModel> invoices;
+  final Function(PurchaseInvoiceModel, String) onStatusUpdate;
+  final Function(PurchaseInvoiceModel) onViewDetails;
 
-  _InvoiceDataSource({
+  _PurchaseInvoiceDataSource({
     required this.invoices,
     required this.onStatusUpdate,
     required this.onViewDetails,
@@ -83,9 +83,9 @@ class _InvoiceDataSource extends DataTableSource {
         DataCell(Text('#${invoice.id}')),
         DataCell(
           Tooltip(
-            message: invoice.customerName,
+            message: invoice.supplierName,
             child: Text(
-              invoice.customerName,
+              invoice.supplierName,
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -206,16 +206,18 @@ class _InvoiceDataSource extends DataTableSource {
     switch (status) {
       case 'draft':
         return Colors.grey;
-      case 'sent':
-        return Colors.blue;
+      case 'pending':
+        return Colors.orange;
       case 'paid':
         return Colors.green;
       case 'overdue':
         return Colors.red;
+      case 'disputed':
+        return Colors.deepPurple;
+      case 'refunded':
+        return Colors.blue;
       case 'cancelled':
         return Colors.red[300]!;
-      case 'refunded':
-        return Colors.purple;
       default:
         return Colors.grey;
     }
@@ -224,15 +226,17 @@ class _InvoiceDataSource extends DataTableSource {
   List<String> _getNextPossibleStatuses(String currentStatus) {
     switch (currentStatus) {
       case 'draft':
-        return ['sent', 'cancelled'];
-      case 'sent':
-        return ['paid', 'overdue', 'cancelled'];
+        return ['pending', 'cancelled'];
+      case 'pending':
+        return ['paid', 'overdue', 'disputed', 'cancelled'];
       case 'overdue':
-        return ['paid', 'cancelled'];
+        return ['paid', 'disputed', 'cancelled'];
+      case 'disputed':
+        return ['pending', 'paid', 'cancelled'];
       case 'paid':
-        return ['refunded'];
-      case 'cancelled':
+        return ['refunded']; // Only paid invoices can be refunded
       case 'refunded':
+      case 'cancelled':
         return [];
       default:
         return [];
@@ -244,11 +248,11 @@ class _InvoiceDataSource extends DataTableSource {
   }
 }
 
-class _InvoiceCard extends StatelessWidget {
-  final InvoiceModel invoice;
-  final Function(InvoiceModel, String) onStatusUpdate;
+class _PurchaseInvoiceCard extends StatelessWidget {
+  final PurchaseInvoiceModel invoice;
+  final Function(PurchaseInvoiceModel, String) onStatusUpdate;
 
-  const _InvoiceCard({
+  const _PurchaseInvoiceCard({
     required this.invoice,
     required this.onStatusUpdate,
   });
@@ -263,6 +267,7 @@ class _InvoiceCard extends StatelessWidget {
             Text(
               '#${invoice.id}',
               style: const TextStyle(
+                fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -274,7 +279,7 @@ class _InvoiceCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 4),
-            Text(invoice.customerName),
+            Text(invoice.supplierName),
             Text(
               'Due: ${Formatters.formatDate(invoice.dueDate)}',
               style: TextStyle(
@@ -298,7 +303,7 @@ class _InvoiceCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow('Sales Order', '#${invoice.salesOrderId}'),
+                _buildInfoRow('Purchase Order', '#${invoice.purchaseOrderId}'),
                 const SizedBox(height: 8),
                 _buildInfoRow('Created', Formatters.formatDate(invoice.createdAt)),
                 const SizedBox(height: 8),
@@ -438,7 +443,7 @@ class _InvoiceCard extends StatelessWidget {
   void _showInvoiceDetails(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => InvoiceDetailsDialog(invoice: invoice),
+      builder: (context) => PurchaseInvoiceDetailsDialog(invoice: invoice),
     );
   }
 
@@ -467,8 +472,8 @@ class _InvoiceCard extends StatelessWidget {
     switch (status) {
       case 'draft':
         return Colors.grey;
-      case 'sent':
-        return Colors.blue;
+      case 'pending':
+        return Colors.orange;
       case 'paid':
         return Colors.green;
       case 'overdue':
@@ -476,7 +481,7 @@ class _InvoiceCard extends StatelessWidget {
       case 'disputed':
         return Colors.deepPurple;
       case 'refunded':
-        return Colors.teal;
+        return Colors.blue;
       case 'cancelled':
         return Colors.red[300]!;
       default:
@@ -487,13 +492,13 @@ class _InvoiceCard extends StatelessWidget {
   List<String> _getNextPossibleStatuses(String currentStatus) {
     switch (currentStatus) {
       case 'draft':
-        return ['sent', 'cancelled'];
-      case 'sent':
+        return ['pending', 'cancelled'];
+      case 'pending':
         return ['paid', 'overdue', 'disputed', 'cancelled'];
       case 'overdue':
         return ['paid', 'disputed', 'cancelled'];
       case 'disputed':
-        return ['sent', 'paid', 'cancelled'];
+        return ['pending', 'paid', 'cancelled'];
       case 'paid':
         return ['refunded']; // Only paid invoices can be refunded
       case 'refunded':

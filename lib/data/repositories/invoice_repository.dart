@@ -120,6 +120,23 @@ class InvoiceRepository {
     }
   }
 
+  Future<List<InvoiceModel>> getInvoicesBySalesOrder(String salesOrderId) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('invoices')
+          .where('salesOrderId', isEqualTo: salesOrderId)
+          .get();
+
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return InvoiceModel.fromJson(data);
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to fetch invoices for sales order: ${e.toString()}');
+    }
+  }
+
   Stream<List<InvoiceModel>> getInvoicesStream() {
     return _firestore
         .collection('invoices')

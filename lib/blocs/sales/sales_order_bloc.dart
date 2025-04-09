@@ -2,6 +2,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../data/models/sales_order_model.dart';
 import '../../data/repositories/sales_order_repository.dart';
+import '../../utils/service_locator.dart';
+import '../invoice/invoice_bloc.dart';
 
 // Events
 abstract class SalesOrderEvent extends Equatable {
@@ -225,6 +227,18 @@ class SalesOrderBloc extends Bloc<SalesOrderEvent, SalesOrderState> {
         event.orderId,
         event.status,
       );
+
+      // Notify the invoice bloc about the status change
+      if (event.status == 'cancelled') {
+        try {
+          final invoiceBloc = locator<InvoiceBloc>();
+          invoiceBloc.add(SalesOrderStatusChanged(event.orderId, event.status));
+        } catch (e) {
+          // Log error but don't change sales order state
+          print('Error notifying invoice bloc: $e');
+        }
+      }
+
       add(LoadSalesOrders());
     } catch (e) {
       emit(SalesOrderError(e.toString()));

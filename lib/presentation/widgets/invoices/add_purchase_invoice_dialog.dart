@@ -1,27 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../blocs/customer/customer_bloc.dart';
-import '../../../blocs/invoice/invoice_bloc.dart';
-import '../../../blocs/sales/sales_order_bloc.dart';
-import '../../../data/models/invoice_model.dart';
-import '../../../data/models/customer_model.dart';
-import '../../../data/models/sales_order_model.dart';
+import '../../../blocs/purchase/purchase_bloc.dart';
+import '../../../blocs/purchase_invoice/purchase_invoice_bloc.dart';
+import '../../../blocs/supplier/supplier_bloc.dart';
+import '../../../data/models/purchase_invoice_model.dart';
+import '../../../data/models/purchase_order_model.dart';
 import '../../../utils/formatter.dart';
 
-class AddInvoiceDialog extends StatefulWidget {
-  const AddInvoiceDialog({Key? key}) : super(key: key);
+class AddPurchaseInvoiceDialog extends StatefulWidget {
+  const AddPurchaseInvoiceDialog({Key? key}) : super(key: key);
 
   @override
-  State<AddInvoiceDialog> createState() => _AddInvoiceDialogState();
+  State<AddPurchaseInvoiceDialog> createState() => _AddPurchaseInvoiceDialogState();
 }
 
-class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
+class _AddPurchaseInvoiceDialogState extends State<AddPurchaseInvoiceDialog> {
   final _formKey = GlobalKey<FormState>();
-  CustomerModel? _selectedCustomer;
-  SalesOrderModel? _selectedOrder;
-  final List<InvoiceItem> _items = [];
+  String? _selectedSupplierId;
+  String? _selectedSupplierName;
+  PurchaseOrderModel? _selectedOrder;
+  final List<PurchaseInvoiceItem> _items = [];
   final _notesController = TextEditingController();
   final _paymentTermsController = TextEditingController();
+  final _invoiceNumberController = TextEditingController();
   final _taxRateController = TextEditingController(text: '10.0');
   DateTime _dueDate = DateTime.now().add(const Duration(days: 30));
   double _subtotal = 0.0;
@@ -31,14 +32,15 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
   @override
   void initState() {
     super.initState();
-    context.read<CustomerBloc>().add(LoadCustomers());
-    context.read<SalesOrderBloc>().add(LoadSalesOrders());
+    context.read<SupplierBloc>().add(LoadSuppliers());
+    context.read<PurchaseBloc>().add(LoadPurchaseOrders());
   }
 
   @override
   void dispose() {
     _notesController.dispose();
     _paymentTermsController.dispose();
+    _invoiceNumberController.dispose();
     _taxRateController.dispose();
     super.dispose();
   }
@@ -54,10 +56,10 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
 
   void _handleSubmit() {
     if (_formKey.currentState?.validate() ?? false) {
-      if (_selectedCustomer == null) {
+      if (_selectedSupplierId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please select a customer'),
+            content: Text('Please select a supplier'),
             backgroundColor: Colors.red,
           ),
         );
@@ -67,7 +69,7 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
       if (_selectedOrder == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please select a sales order'),
+            content: Text('Please select a purchase order'),
             backgroundColor: Colors.red,
           ),
         );
@@ -84,12 +86,12 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
         return;
       }
 
-      final invoice = InvoiceModel(
+      final invoice = PurchaseInvoiceModel(
         id: '',  // Will be set by Firestore
-        customerId: _selectedCustomer!.id,
-        customerName: _selectedCustomer!.name,
-        salesOrderId: _selectedOrder!.id,
-        status: InvoiceStatus.draft.name,
+        supplierId: _selectedSupplierId!,
+        supplierName: _selectedSupplierName!,
+        purchaseOrderId: _selectedOrder!.id,
+        status: PurchaseInvoiceStatus.draft.name,
         items: _items,
         subtotal: _subtotal,
         tax: _tax,
@@ -97,22 +99,23 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
         dueDate: _dueDate,
         notes: _notesController.text.trim(),
         paymentTerms: _paymentTermsController.text.trim(),
+        invoiceNumber: _invoiceNumberController.text.trim(),
         isPaid: false,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
-      context.read<InvoiceBloc>().add(AddInvoice(invoice));
+      context.read<PurchaseInvoiceBloc>().add(AddPurchaseInvoice(invoice));
       Navigator.pop(context);
     }
   }
 
-  void _loadOrderItems(SalesOrderModel order) {
+  void _loadOrderItems(PurchaseOrderModel order) {
     setState(() {
       _items.clear();
       for (var item in order.items) {
         _items.add(
-          InvoiceItem(
+          PurchaseInvoiceItem(
             productId: item.productId,
             productName: item.productName,
             quantity: item.quantity,
@@ -144,7 +147,7 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Create Invoice',
+                    'Create Purchase Invoice',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -164,40 +167,45 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Customer Selection
-                      BlocBuilder<CustomerBloc, CustomerState>(
+                      // Supplier Selection
+                      BlocBuilder<SupplierBloc, SupplierState>(
                         builder: (context, state) {
-                          if (state is CustomersLoaded) {
-                            final activeCustomers = state.customers
-                                .where((c) => c.isActive)
+                          if (state is SuppliersLoaded) {
+                            final activeSuppliers = state.suppliers
+                                .where((s) => s.isActive)
                                 .toList();
 
-                            return DropdownButtonFormField<CustomerModel>(
-                              value: _selectedCustomer,
+                            return DropdownButtonFormField<String>(
+                              value: _selectedSupplierId,
                               decoration: InputDecoration(
-                                labelText: 'Customer',
+                                labelText: 'Supplier',
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
                               items: [
-                                ...activeCustomers.map((customer) {
+                                ...activeSuppliers.map((supplier) {
                                   return DropdownMenuItem(
-                                    value: customer,
-                                    child: Text(customer.name),
+                                    value: supplier.id,
+                                    child: Text(supplier.name),
                                   );
                                 }),
                               ],
                               onChanged: (value) {
                                 setState(() {
-                                  _selectedCustomer = value;
+                                  _selectedSupplierId = value;
                                   _selectedOrder = null;
                                   _items.clear();
+                                  if (value != null) {
+                                    _selectedSupplierName = activeSuppliers
+                                        .firstWhere((s) => s.id == value)
+                                        .name;
+                                  }
                                 });
                               },
                               validator: (value) {
                                 if (value == null) {
-                                  return 'Please select a customer';
+                                  return 'Please select a supplier';
                                 }
                                 return null;
                               },
@@ -209,38 +217,37 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
                       const SizedBox(height: 16),
 
                       // Order Selection
-                      BlocBuilder<SalesOrderBloc, SalesOrderState>(
+                      BlocBuilder<PurchaseBloc, PurchaseState>(
                         builder: (context, state) {
-                          if (state is SalesOrdersLoaded) {
-                            final customerOrders = _selectedCustomer != null
+                          if (state is PurchaseOrdersLoaded) {
+                            final supplierOrders = _selectedSupplierId != null
                                 ? state.orders
-                                .where((o) => o.customerId == _selectedCustomer!.id)
-                                .where((o) => (o.status == SalesOrderStatus.delivered.name ||
-                                o.status == SalesOrderStatus.shipped.name))
+                                .where((o) => o.supplierId == _selectedSupplierId)
+                                .where((o) => o.status == PurchaseOrderStatus.received.name)
                                 .where((o) => !o.isPaid) // Only show unpaid orders
                                 .toList()
                                 : [];
 
-                            return DropdownButtonFormField<SalesOrderModel>(
+                            return DropdownButtonFormField<PurchaseOrderModel>(
                               isExpanded: true,
                               value: _selectedOrder,
                               decoration: InputDecoration(
-                                labelText: 'Sales Order',
+                                labelText: 'Purchase Order',
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                                items: [
-                                  ...customerOrders.map((order) {
-                                    return DropdownMenuItem(
-                                      value: order,
-                                      child: Text(
-                                        'Order #${order.id} (${Formatters.formatCurrency(order.totalAmount)})',
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    );
-                                  }),
-                                ],
+                              items: [
+                                ...supplierOrders.map((order) {
+                                  return DropdownMenuItem(
+                                    value: order,
+                                    child: Text(
+                                      'Order #${order.id} (${Formatters.formatCurrency(order.totalAmount)})',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                }),
+                              ],
                               onChanged: (value) {
                                 setState(() {
                                   _selectedOrder = value;
@@ -254,13 +261,32 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
                               },
                               validator: (value) {
                                 if (value == null) {
-                                  return 'Please select a sales order';
+                                  return 'Please select a purchase order';
                                 }
                                 return null;
                               },
                             );
                           }
                           return const LinearProgressIndicator();
+                        },
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Invoice Number
+                      TextFormField(
+                        controller: _invoiceNumberController,
+                        decoration: InputDecoration(
+                          labelText: 'Supplier\'s Invoice Number',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          hintText: 'Enter the supplier\'s original invoice number',
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter the supplier\'s invoice number';
+                          }
+                          return null;
                         },
                       ),
                       const SizedBox(height: 24),
@@ -293,7 +319,7 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
                                         ),
                                         const SizedBox(height: 16),
                                         Text(
-                                          'No items added yet. Select a sales order to load items.',
+                                          'No items added yet. Select a purchase order to load items.',
                                           style: TextStyle(
                                             color: Colors.grey[600],
                                           ),
@@ -339,6 +365,21 @@ class _AddInvoiceDialogState extends State<AddInvoiceDialog> {
                       // Tax and Payment Options
                       Row(
                         children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _taxRateController,
+                              decoration: InputDecoration(
+                                labelText: 'Tax Rate (%)',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                suffixText: '%',
+                              ),
+                              keyboardType: TextInputType.number,
+                              onChanged: (value) => _updateTotals(),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
                           Expanded(
                             child: TextFormField(
                               controller: _paymentTermsController,

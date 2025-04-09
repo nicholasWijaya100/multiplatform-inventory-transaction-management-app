@@ -201,6 +201,12 @@ class SideMenu extends StatelessWidget {
                 isSelected: navigationController.currentRoute == '/suppliers',
                 onTap: () => navigationController.navigateTo('/suppliers'),
               ),
+              _MenuItem(
+                icon: Icons.receipt_long_outlined,
+                title: 'Purchase Invoices',
+                isSelected: navigationController.currentRoute == '/purchase-invoices',
+                onTap: () => navigationController.navigateTo('/purchase-invoices'),
+              ),
             ],
           ),
         ],

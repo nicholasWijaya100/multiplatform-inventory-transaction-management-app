@@ -91,6 +91,16 @@ class UpdateSalesOrderPayment extends InvoiceEvent {
   List<Object?> get props => [salesOrderId, isPaid];
 }
 
+class SalesOrderStatusChanged extends InvoiceEvent {
+  final String salesOrderId;
+  final String newStatus;
+
+  const SalesOrderStatusChanged(this.salesOrderId, this.newStatus);
+
+  @override
+  List<Object?> get props => [salesOrderId, newStatus];
+}
+
 // States
 abstract class InvoiceState extends Equatable {
   const InvoiceState();
@@ -173,6 +183,7 @@ class InvoiceBloc extends Bloc<InvoiceEvent, InvoiceState> {
     on<UpdateInvoiceStatus>(_onUpdateInvoiceStatus);
     on<MarkInvoiceAsPaid>(_onMarkInvoiceAsPaid);
     on<UpdateSalesOrderPayment>(_onUpdateSalesOrderPayment);
+    on<SalesOrderStatusChanged>(_onSalesOrderStatusChanged);
   }
 
   Future<void> _onLoadInvoices(
@@ -277,10 +288,23 @@ class InvoiceBloc extends Bloc<InvoiceEvent, InvoiceState> {
       ) async {
     emit(InvoiceLoading());
     try {
-      await _invoiceRepository.updateInvoiceStatus(
-        event.invoiceId,
-        event.status,
-      );
+      // If the new status is 'paid', set the paid date as well
+      if (event.status == InvoiceStatus.paid.name) {
+        await _invoiceRepository.markAsPaid(event.invoiceId);
+
+        // If there's a sales order, update its payment status
+        final invoice = await _invoiceRepository.getInvoice(event.invoiceId);
+        if (invoice.salesOrderId.isNotEmpty) {
+          add(UpdateSalesOrderPayment(invoice.salesOrderId, true));
+        }
+      } else {
+        // Handle regular status update
+        await _invoiceRepository.updateInvoiceStatus(
+          event.invoiceId,
+          event.status,
+        );
+      }
+
       add(LoadInvoices());
     } catch (e) {
       emit(InvoiceError(e.toString()));
@@ -331,18 +355,54 @@ class InvoiceBloc extends Bloc<InvoiceEvent, InvoiceState> {
     }
   }
 
+  Future<void> _onSalesOrderStatusChanged(
+      SalesOrderStatusChanged event,
+      Emitter<InvoiceState> emit,
+      ) async {
+    try {
+      // Get all invoices for this sales order
+      final invoices = await _invoiceRepository.getInvoicesBySalesOrder(event.salesOrderId);
+
+      if (event.newStatus == 'cancelled') {
+        for (var invoice in invoices) {
+          if (invoice.isPaid) {
+            // Mark paid invoices as refunded
+            await _invoiceRepository.updateInvoiceStatus(
+                invoice.id,
+                InvoiceStatus.refunded.name
+            );
+          } else {
+            // Mark unpaid invoices as cancelled
+            await _invoiceRepository.updateInvoiceStatus(
+                invoice.id,
+                InvoiceStatus.cancelled.name
+            );
+          }
+        }
+      }
+
+      // Reload invoices
+      add(LoadInvoices());
+    } catch (e) {
+      emit(InvoiceError(e.toString()));
+    }
+  }
+
   // Helper methods for status
   List<String> getNextPossibleStatuses(String currentStatus) {
     switch (currentStatus) {
       case 'draft':
         return ['sent', 'cancelled'];
       case 'sent':
-        return ['paid', 'overdue', 'cancelled'];
+        return ['paid', 'overdue', 'disputed', 'cancelled'];
       case 'overdue':
-        return ['paid', 'cancelled'];
+        return ['paid', 'disputed', 'cancelled'];
+      case 'disputed':
+        return ['sent', 'paid', 'cancelled'];
       case 'paid':
-      case 'cancelled':
+        return ['refunded']; // Only paid invoices can be refunded
       case 'refunded':
+      case 'cancelled':
         return [];
       default:
         return [];

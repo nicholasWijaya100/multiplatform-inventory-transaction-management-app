@@ -121,6 +121,23 @@ class PurchaseInvoiceRepository {
     }
   }
 
+  Future<List<PurchaseInvoiceModel>> getInvoicesByPurchaseOrder(String purchaseOrderId) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('purchase_invoices')
+          .where('purchaseOrderId', isEqualTo: purchaseOrderId)
+          .get();
+
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return PurchaseInvoiceModel.fromJson(data);
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to fetch invoices for purchase order: ${e.toString()}');
+    }
+  }
+
   Stream<List<PurchaseInvoiceModel>> getPurchaseInvoicesStream() {
     return _firestore
         .collection('purchase_invoices')

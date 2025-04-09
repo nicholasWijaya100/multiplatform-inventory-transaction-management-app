@@ -1,29 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../blocs/invoice/invoice_bloc.dart';
-import '../../../data/models/invoice_model.dart';
-import '../../widgets/invoices/add_invoice_dialog.dart';
-import '../../widgets/invoices/invoice_filters.dart';
-import '../../widgets/invoices/invoice_list.dart';
-import '../../widgets/invoices/invoice_stats_cards.dart';
+import '../../../blocs/purchase_invoice/purchase_invoice_bloc.dart';
+import '../../../data/models/purchase_invoice_model.dart';
+import '../../widgets/invoices/add_purchase_invoice_dialog.dart';
+import '../../widgets/invoices/purchase_invoice_filters.dart';
+import '../../widgets/invoices/purchase_invoice_list.dart';
+import '../../widgets/invoices/purchase_invoice_stats_cards.dart';
 
-class InvoiceManagementScreen extends StatefulWidget {
-  const InvoiceManagementScreen({Key? key}) : super(key: key);
+class PurchaseInvoiceManagementScreen extends StatefulWidget {
+  const PurchaseInvoiceManagementScreen({Key? key}) : super(key: key);
 
   @override
-  State<InvoiceManagementScreen> createState() => _InvoiceManagementScreenState();
+  State<PurchaseInvoiceManagementScreen> createState() => _PurchaseInvoiceManagementScreenState();
 }
 
-class _InvoiceManagementScreenState extends State<InvoiceManagementScreen> {
+class _PurchaseInvoiceManagementScreenState extends State<PurchaseInvoiceManagementScreen> {
   final TextEditingController _searchController = TextEditingController();
-  String? _selectedCustomer;
+  String? _selectedSupplier;
   String? _selectedStatus;
   bool _showOverdue = false;
 
   @override
   void initState() {
     super.initState();
-    context.read<InvoiceBloc>().add(LoadInvoices());
+    context.read<PurchaseInvoiceBloc>().add(LoadPurchaseInvoices());
   }
 
   @override
@@ -32,10 +32,10 @@ class _InvoiceManagementScreenState extends State<InvoiceManagementScreen> {
     super.dispose();
   }
 
-  void _showAddInvoiceDialog() {
+  void _showAddPurchaseInvoiceDialog() {
     showDialog(
       context: context,
-      builder: (context) => const AddInvoiceDialog(),
+      builder: (context) => const AddPurchaseInvoiceDialog(),
     );
   }
 
@@ -54,7 +54,7 @@ class _InvoiceManagementScreenState extends State<InvoiceManagementScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Invoices',
+                  'Purchase Invoices',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -62,7 +62,7 @@ class _InvoiceManagementScreenState extends State<InvoiceManagementScreen> {
                 ),
                 if (!isSmallScreen)
                   ElevatedButton.icon(
-                    onPressed: _showAddInvoiceDialog,
+                    onPressed: _showAddPurchaseInvoiceDialog,
                     icon: const Icon(Icons.add),
                     label: const Text('Create Invoice'),
                     style: ElevatedButton.styleFrom(
@@ -78,34 +78,34 @@ class _InvoiceManagementScreenState extends State<InvoiceManagementScreen> {
             const SizedBox(height: 24),
 
             // Stats Cards
-            const InvoiceStatsCards(),
+            const PurchaseInvoiceStatsCards(),
             const SizedBox(height: 24),
 
             // Filters
-            InvoiceFilters(
+            PurchaseInvoiceFilters(
               searchController: _searchController,
-              selectedCustomer: _selectedCustomer,
+              selectedSupplier: _selectedSupplier,
               selectedStatus: _selectedStatus,
               showOverdue: _showOverdue,
               onSearchChanged: (value) {
-                context.read<InvoiceBloc>().add(SearchInvoices(value));
+                context.read<PurchaseInvoiceBloc>().add(SearchPurchaseInvoices(value));
               },
-              onCustomerChanged: (value) {
-                setState(() => _selectedCustomer = value);
-                context.read<InvoiceBloc>().add(
-                  FilterInvoicesByCustomer(value),
+              onSupplierChanged: (value) {
+                setState(() => _selectedSupplier = value);
+                context.read<PurchaseInvoiceBloc>().add(
+                  FilterPurchaseInvoicesBySupplier(value),
                 );
               },
               onStatusChanged: (value) {
                 setState(() => _selectedStatus = value);
-                context.read<InvoiceBloc>().add(
-                  FilterInvoicesByStatus(value),
+                context.read<PurchaseInvoiceBloc>().add(
+                  FilterPurchaseInvoicesByStatus(value),
                 );
               },
               onShowOverdueChanged: (value) {
                 setState(() => _showOverdue = value);
-                context.read<InvoiceBloc>().add(
-                  ShowOverdueInvoices(value),
+                context.read<PurchaseInvoiceBloc>().add(
+                  ShowOverduePurchaseInvoices(value),
                 );
               },
             ),
@@ -113,13 +113,13 @@ class _InvoiceManagementScreenState extends State<InvoiceManagementScreen> {
 
             // Invoices List
             Expanded(
-              child: BlocBuilder<InvoiceBloc, InvoiceState>(
+              child: BlocBuilder<PurchaseInvoiceBloc, PurchaseInvoiceState>(
                 builder: (context, state) {
-                  if (state is InvoiceLoading) {
+                  if (state is PurchaseInvoiceLoading) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  if (state is InvoiceError) {
+                  if (state is PurchaseInvoiceError) {
                     return Center(
                       child: Text(
                         state.message,
@@ -128,18 +128,18 @@ class _InvoiceManagementScreenState extends State<InvoiceManagementScreen> {
                     );
                   }
 
-                  if (state is InvoicesLoaded) {
+                  if (state is PurchaseInvoicesLoaded) {
                     if (state.invoices.isEmpty) {
                       return const Center(
-                        child: Text('No invoices found'),
+                        child: Text('No purchase invoices found'),
                       );
                     }
 
-                    return InvoiceList(
+                    return PurchaseInvoiceList(
                       invoices: state.invoices,
                       onStatusUpdate: (invoice, newStatus) {
-                        context.read<InvoiceBloc>().add(
-                          UpdateInvoiceStatus(invoice.id, newStatus),
+                        context.read<PurchaseInvoiceBloc>().add(
+                          UpdatePurchaseInvoiceStatus(invoice.id, newStatus),
                         );
                       },
                     );
@@ -154,7 +154,7 @@ class _InvoiceManagementScreenState extends State<InvoiceManagementScreen> {
       ),
       floatingActionButton: isSmallScreen
           ? FloatingActionButton(
-        onPressed: _showAddInvoiceDialog,
+        onPressed: _showAddPurchaseInvoiceDialog,
         backgroundColor: Colors.blue[900],
         child: const Icon(Icons.add),
       )
