@@ -244,6 +244,13 @@ class SideMenu extends StatelessWidget {
                   isSelected: navigationController.currentRoute == '/reports/stock',
                   onTap: () => navigationController.navigateTo('/reports/stock'),
                 ),
+              if (user.role == UserRole.administrator.name)
+                _MenuItem(
+                  title: 'Income Statement',
+                  icon: Icons.account_balance_wallet_outlined,
+                  isSelected: navigationController.currentRoute == '/reports/income-statement',
+                  onTap: () => navigationController.navigateTo('/reports/income-statement'),
+                ),
             ],
           ),
         ],

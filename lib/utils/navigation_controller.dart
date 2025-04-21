@@ -8,6 +8,8 @@ import '../presentation/screens/dashboard/dashboard_screen.dart';
 import '../presentation/screens/invoices/invoice_management_screen.dart';
 import '../presentation/screens/invoices/purchase_invoice_management_screen.dart';
 import '../presentation/screens/purchase_orders/purchase_orders_screen.dart';
+import '../presentation/screens/reports/income_statement_screen.dart';
+import '../presentation/screens/reports/sales_report_screen.dart';
 import '../presentation/screens/reports/stock_report_screen.dart';
 import '../presentation/screens/stock_transfer/stock_transfer_screen.dart';
 import '../presentation/screens/users/user_management_screen.dart';
@@ -49,6 +51,10 @@ class NavigationController extends ChangeNotifier {
         return const StockReportScreen();
       case '/reports/purchases':
         return const PurchaseReportScreen();
+      case '/reports/income-statement':
+        return const IncomeStatementScreen();
+      case '/reports/sales':
+        return const SalesReportScreen();
       case '/suppliers':
         return const SupplierManagementScreen();
       case '/purchases':

@@ -233,6 +233,16 @@ class MobileDrawer extends StatelessWidget {
                               isSelected: navigationController.currentRoute ==
                                   '/reports/stock',
                             ),
+                          if (user.role == UserRole.administrator.name ||
+                              user.role == UserRole.warehouse.name)
+                            _buildMenuItem(
+                              context: context,
+                              icon: Icons.account_balance_wallet_outlined,
+                              title: 'Income Statement',
+                              route: '/reports/income-statement',
+                              isSelected: navigationController.currentRoute ==
+                                  '/reports/income-statement',
+                            ),
                         ],
 
                         const Divider(height: 16),

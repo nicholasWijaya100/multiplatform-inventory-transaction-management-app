@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../blocs/purchase/purchase_bloc.dart';
-import '../../../blocs/supplier/supplier_bloc.dart';
-import '../../../data/models/purchase_order_model.dart';
+import '../../../blocs/sales/sales_order_bloc.dart';
+import '../../../blocs/customer/customer_bloc.dart';
+import '../../../data/models/sales_order_model.dart';
 import '../../../utils/formatter.dart';
 
-class PurchaseReportScreen extends StatefulWidget {
-  const PurchaseReportScreen({Key? key}) : super(key: key);
+class SalesReportScreen extends StatefulWidget {
+  const SalesReportScreen({Key? key}) : super(key: key);
 
   @override
-  State<PurchaseReportScreen> createState() => _PurchaseReportScreenState();
+  State<SalesReportScreen> createState() => _SalesReportScreenState();
 }
 
-class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
+class _SalesReportScreenState extends State<SalesReportScreen> {
   DateTimeRange? _dateRange;
-  String? _selectedSupplier;
+  String? _selectedCustomer;
   String? _selectedStatus;
   bool _showPaidOnly = false;
   bool _showUnpaidOnly = false;
@@ -28,16 +28,13 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
       start: DateTime(now.year, now.month, 1),
       end: now,
     );
-    // Load suppliers and purchase orders
-    context.read<SupplierBloc>().add(LoadSuppliers());
+    // Load customers and sales orders
+    context.read<CustomerBloc>().add(LoadCustomers());
     _loadReport();
   }
 
   void _loadReport() {
-    // Add showCompleted: true to include all orders
-    context.read<PurchaseBloc>().add(
-      LoadPurchaseOrders(showCompleted: true),
-    );
+    context.read<SalesOrderBloc>().add(LoadSalesOrders());
   }
 
   @override
@@ -52,7 +49,7 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
           children: [
             // Header
             Text(
-              'Purchase Report',
+              'Sales Report',
               style: TextStyle(
                 fontSize: isSmallScreen ? 20 : 24,
                 fontWeight: FontWeight.bold,
@@ -70,7 +67,7 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
                       // Mobile Layout
                       _buildDateRangePicker(context),
                       const SizedBox(height: 16),
-                      _buildSupplierFilter(),
+                      _buildCustomerFilter(),
                       const SizedBox(height: 16),
                       _buildStatusFilter(),
                       const SizedBox(height: 16),
@@ -81,7 +78,7 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
                         children: [
                           Expanded(child: _buildDateRangePicker(context)),
                           const SizedBox(width: 16),
-                          Expanded(child: _buildSupplierFilter()),
+                          Expanded(child: _buildCustomerFilter()),
                           const SizedBox(width: 16),
                           Expanded(child: _buildStatusFilter()),
                         ],
@@ -109,9 +106,9 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
             const SizedBox(height: 24),
 
             // Stats Cards
-            BlocBuilder<PurchaseBloc, PurchaseState>(
+            BlocBuilder<SalesOrderBloc, SalesOrderState>(
               builder: (context, state) {
-                if (state is PurchaseOrdersLoaded) {
+                if (state is SalesOrdersLoaded) {
                   final filteredOrders = _getFilteredOrders(state.orders);
                   return _buildStatsCards(filteredOrders, isSmallScreen);
                 }
@@ -122,13 +119,13 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
 
             // Orders Table
             Expanded(
-              child: BlocBuilder<PurchaseBloc, PurchaseState>(
+              child: BlocBuilder<SalesOrderBloc, SalesOrderState>(
                 builder: (context, state) {
-                  if (state is PurchaseLoading) {
+                  if (state is SalesOrderLoading) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  if (state is PurchaseOrdersLoaded) {
+                  if (state is SalesOrdersLoaded) {
                     final filteredOrders = _getFilteredOrders(state.orders);
 
                     if (filteredOrders.isEmpty) {
@@ -143,7 +140,7 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'No purchase orders found',
+                              'No sales orders found',
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 16,
@@ -206,19 +203,19 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
     );
   }
 
-  Widget _buildSupplierFilter() {
-    return BlocBuilder<SupplierBloc, SupplierState>(
+  Widget _buildCustomerFilter() {
+    return BlocBuilder<CustomerBloc, CustomerState>(
       builder: (context, state) {
-        if (state is SuppliersLoaded) {
-          final activeSuppliers = state.suppliers
-              .where((s) => s.isActive)
+        if (state is CustomersLoaded) {
+          final activeCustomers = state.customers
+              .where((c) => c.isActive)
               .toList()
             ..sort((a, b) => a.name.compareTo(b.name)); // Sort alphabetically
 
           return DropdownButtonFormField<String>(
-            value: _selectedSupplier,
+            value: _selectedCustomer,
             decoration: InputDecoration(
-              labelText: 'Supplier',
+              labelText: 'Customer',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -226,15 +223,15 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
             items: [
               const DropdownMenuItem(
                 value: null,
-                child: Text('All Suppliers'),
+                child: Text('All Customers'),
               ),
-              ...activeSuppliers.map((supplier) => DropdownMenuItem(
-                value: supplier.id,
-                child: Text(supplier.name),
+              ...activeCustomers.map((customer) => DropdownMenuItem(
+                value: customer.id,
+                child: Text(customer.name),
               )),
             ],
             onChanged: (value) {
-              setState(() => _selectedSupplier = value);
+              setState(() => _selectedCustomer = value);
               _loadReport();
             },
           );
@@ -258,7 +255,7 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
           value: null,
           child: Text('All Statuses'),
         ),
-        ...PurchaseOrderStatus.values.map((status) {
+        ...SalesOrderStatus.values.map((status) {
           return DropdownMenuItem(
             value: status.name,
             child: Text(status.name),
@@ -319,20 +316,12 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
     );
   }
 
-  Widget _buildStatsCards(List<PurchaseOrderModel> orders, bool isSmallScreen) {
+  Widget _buildStatsCards(List<SalesOrderModel> orders, bool isSmallScreen) {
     final totalOrders = orders.length;
     final totalAmount = orders.fold<double>(
       0,
           (sum, order) => sum + order.totalAmount,
     );
-    final completedOrders = orders
-        .where((order) => order.status == PurchaseOrderStatus.completed.name)
-        .length;
-    final pendingAmount = orders
-        .where((order) =>
-    order.status != PurchaseOrderStatus.completed.name &&
-        order.status != PurchaseOrderStatus.cancelled.name)
-        .fold<double>(0, (sum, order) => sum + order.totalAmount);
 
     // Calculate paid vs unpaid stats
     final paidOrders = orders.where((order) => order.isPaid).length;
@@ -340,6 +329,9 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
         .where((order) => order.isPaid)
         .fold<double>(0, (sum, order) => sum + order.totalAmount);
     final unpaidAmount = totalAmount - paidAmount;
+
+    // Calculate average order value
+    final avgOrderValue = orders.isNotEmpty ? totalAmount / totalOrders : 0.0;
 
     final cards = [
       _StatCard(
@@ -349,7 +341,7 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
         color: Colors.blue[700]!,
       ),
       _StatCard(
-        title: 'Total Amount',
+        title: 'Total Revenue',
         value: Formatters.formatCurrency(totalAmount),
         icon: Icons.attach_money,
         color: Colors.green[600]!,
@@ -361,7 +353,7 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
         color: Colors.teal[600]!,
       ),
       _StatCard(
-        title: 'Unpaid Amount',
+        title: 'Outstanding Amount',
         value: Formatters.formatCurrency(unpaidAmount),
         icon: Icons.money_off_outlined,
         color: Colors.red[600]!,
@@ -391,7 +383,7 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
     );
   }
 
-  Widget _buildMobileOrdersList(List<PurchaseOrderModel> orders) {
+  Widget _buildMobileOrdersList(List<SalesOrderModel> orders) {
     return ListView.builder(
       itemCount: orders.length,
       itemBuilder: (context, index) {
@@ -404,7 +396,7 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'PO #${order.id}',
+                    'SO #${order.id}',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                     ),
@@ -418,7 +410,7 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                Text(order.supplierName),
+                Text(order.customerName),
                 const SizedBox(height: 4),
                 Text(
                   Formatters.formatDateTime(order.createdAt),
@@ -466,13 +458,13 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
     );
   }
 
-  Widget _buildOrdersTable(List<PurchaseOrderModel> orders) {
+  Widget _buildOrdersTable(List<SalesOrderModel> orders) {
     return Card(
       child: SingleChildScrollView(
         child: DataTable(
           columns: const [
             DataColumn(label: Text('Order ID')),
-            DataColumn(label: Text('Supplier')),
+            DataColumn(label: Text('Customer')),
             DataColumn(label: Text('Date')),
             DataColumn(label: Text('Status')),
             DataColumn(label: Text('Payment')),
@@ -485,7 +477,7 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
             return DataRow(
               cells: [
                 DataCell(Text('#${order.id}')),
-                DataCell(Text(order.supplierName)),
+                DataCell(Text(order.customerName)),
                 DataCell(Text(Formatters.formatDateTime(order.createdAt))),
                 DataCell(
                   Container(
@@ -555,7 +547,7 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
     );
   }
 
-  List<PurchaseOrderModel> _getFilteredOrders(List<PurchaseOrderModel> orders) {
+  List<SalesOrderModel> _getFilteredOrders(List<SalesOrderModel> orders) {
     return orders.where((order) {
       // Date range filter
       if (_dateRange != null) {
@@ -570,8 +562,8 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
         }
       }
 
-      // Supplier filter
-      if (_selectedSupplier != null && order.supplierId != _selectedSupplier) {
+      // Customer filter
+      if (_selectedCustomer != null && order.customerId != _selectedCustomer) {
         return false;
       }
 
@@ -602,10 +594,10 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
         return Colors.orange;
       case 'confirmed':
         return Colors.blue;
-      case 'received':
+      case 'shipped':
+        return Colors.indigo;
+      case 'delivered':
         return Colors.green;
-      case 'completed':
-        return Colors.purple;
       case 'cancelled':
         return Colors.red;
       default:
