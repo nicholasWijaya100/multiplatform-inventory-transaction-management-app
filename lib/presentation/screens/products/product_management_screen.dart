@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../blocs/auth/auth_bloc.dart';
 import '../../../blocs/product/product_bloc.dart';
 import '../../../data/models/product_model.dart';
+import '../../../data/models/user_model.dart';
 import '../../widgets/products/add_product.dart';
 import '../../widgets/products/edit_product.dart';
 import '../../widgets/products/product_filters.dart';
@@ -52,6 +54,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final isSmallScreen = MediaQuery.of(context).size.width < 600;
+    final authState = context.watch<AuthBloc>().state;
+    final isAdmin = authState is Authenticated && authState.user.role == UserRole.administrator.name;
 
     return Scaffold(
       body: Container(
@@ -69,7 +73,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (!isSmallScreen)
+                if (!isSmallScreen && isAdmin)
                   ElevatedButton.icon(
                     onPressed: _showAddProductDialog,
                     icon: const Icon(Icons.add),
@@ -161,7 +165,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
           ],
         ),
       ),
-      floatingActionButton: isSmallScreen
+      floatingActionButton: isSmallScreen && isAdmin
           ? FloatingActionButton(
         onPressed: _showAddProductDialog,
         backgroundColor: Colors.blue[900],

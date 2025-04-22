@@ -4,6 +4,9 @@ import 'package:inventory_app_revised/presentation/screens/customers/customer_ma
 import 'package:inventory_app_revised/presentation/screens/reports/purchase_report_screen.dart';
 import 'package:inventory_app_revised/presentation/screens/sales/sales_order_management_screen.dart';
 import 'package:inventory_app_revised/presentation/screens/suppliers/supplier_management_screen.dart';
+import 'package:inventory_app_revised/utils/service_locator.dart';
+import '../blocs/auth/auth_bloc.dart';
+import '../data/models/user_model.dart';
 import '../presentation/screens/dashboard/dashboard_screen.dart';
 import '../presentation/screens/invoices/invoice_management_screen.dart';
 import '../presentation/screens/invoices/purchase_invoice_management_screen.dart';
@@ -34,6 +37,8 @@ class NavigationController extends ChangeNotifier {
   }
 
   Widget getScreenForRoute(String route) {
+    final authState = locator<AuthBloc>().state;
+    final isAdmin = authState is Authenticated && authState.user.role == UserRole.administrator.name;
     switch (route) {
       case '/dashboard':
         return const DashboardScreen();

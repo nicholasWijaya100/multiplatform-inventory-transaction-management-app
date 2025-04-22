@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:inventory_app_revised/presentation/widgets/products/product_mobile_card.dart';
 import '../../../../data/models/product_model.dart';
+import '../../../blocs/auth/auth_bloc.dart';
+import '../../../data/models/user_model.dart';
 import '../../../utils/formatter.dart';
 
 class ProductList extends StatelessWidget {
@@ -120,9 +123,17 @@ class ProductList extends StatelessWidget {
                     ),
                   ),
                 ),
-                DataCell(Text(
-                  Formatters.formatCurrency(product.price),
-                  style: const TextStyle(fontWeight: FontWeight.w500),
+                DataCell(BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, state) {
+                    if (state is Authenticated && state.user.role == UserRole.administrator.name) {
+                      return Text(
+                        Formatters.formatCurrency(product.price),
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      );
+                    } else {
+                      return const Text('***', style: TextStyle(fontWeight: FontWeight.w500));
+                    }
+                  },
                 )),
                 DataCell(
                   Row(
@@ -151,26 +162,34 @@ class ProductList extends StatelessWidget {
                   ),
                 ),
                 DataCell(
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => onEdit(product),
-                        tooltip: 'Edit Product',
-                        color: Colors.blue[700],
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          product.isActive
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                        ),
-                        onPressed: () => onStatusChange(product, !product.isActive),
-                        tooltip: product.isActive ? 'Deactivate' : 'Activate',
-                        color: product.isActive ? Colors.green : Colors.grey,
-                      ),
-                    ],
+                  BlocBuilder<AuthBloc, AuthState>(
+                    builder: (context, state) {
+                      final isAdmin = state is Authenticated && state.user.role == UserRole.administrator.name;
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // All users can view/edit the product, but non-admins will see a limited interface
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () => onEdit(product),
+                            tooltip: isAdmin ? 'Edit Product' : 'Update Stock',
+                            color: Colors.blue[700],
+                          ),
+                          // Only admins can change status
+                          if (isAdmin)
+                            IconButton(
+                              icon: Icon(
+                                product.isActive
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () => onStatusChange(product, !product.isActive),
+                              tooltip: product.isActive ? 'Deactivate' : 'Activate',
+                              color: product.isActive ? Colors.green : Colors.grey,
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ],

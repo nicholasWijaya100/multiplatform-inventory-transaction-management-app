@@ -264,18 +264,18 @@ class _IncomeStatementScreenState extends State<IncomeStatementScreen> {
                 color: Colors.grey[600],
               ),
             ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => _showExportOptions(context),
-                icon: const Icon(Icons.download),
-                label: const Text('Export Report'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[700],
-                ),
-              ),
-            ),
+            // const SizedBox(height: 8),
+            // SizedBox(
+            //   width: double.infinity,
+            //   child: ElevatedButton.icon(
+            //     onPressed: () => _showExportOptions(context),
+            //     icon: const Icon(Icons.download),
+            //     label: const Text('Export Report'),
+            //     style: ElevatedButton.styleFrom(
+            //       backgroundColor: Colors.blue[700],
+            //     ),
+            //   ),
+            // ),
           ],
         ] else ...[
           Row(

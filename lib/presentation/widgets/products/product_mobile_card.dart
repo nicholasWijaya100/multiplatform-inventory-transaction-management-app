@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../data/models/product_model.dart';
+import '../../../blocs/auth/auth_bloc.dart';
+import '../../../data/models/user_model.dart';
 import '../../../utils/formatter.dart';
 
 class ProductCard extends StatelessWidget {
@@ -35,12 +38,26 @@ class ProductCard extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        subtitle: Text(
-          Formatters.formatCurrency(product.price),
-          style: const TextStyle(
-            color: Colors.blue,
-            fontWeight: FontWeight.w500,
-          ),
+        subtitle: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            if (state is Authenticated && state.user.role == UserRole.administrator.name) {
+              return Text(
+                Formatters.formatCurrency(product.price),
+                style: const TextStyle(
+                  color: Colors.blue,
+                  fontWeight: FontWeight.w500,
+                ),
+              );
+            } else {
+              return const Text(
+                "",
+                style: TextStyle(
+                  color: Colors.blue,
+                  fontWeight: FontWeight.w500,
+                ),
+              );
+            }
+          },
         ),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -71,32 +88,52 @@ class ProductCard extends StatelessWidget {
                   _buildInfoRow('Description', product.description!),
                 ],
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Text(
-                      'Status',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const Spacer(),
-                    Switch(
-                      value: product.isActive,
-                      onChanged: (value) => onStatusChange(product, value),
-                    ),
-                  ],
+                BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, state) {
+                    final isAdmin = state is Authenticated && state.user.role == UserRole.administrator.name;
+
+                    return Row(
+                      children: [
+                        Text(
+                          'Status',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const Spacer(),
+                        Switch(
+                          value: product.isActive,
+                          onChanged: isAdmin ? (value) => onStatusChange(product, value) : null,
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 const Divider(),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton.icon(
-                      onPressed: () => onEdit(product),
-                      icon: const Icon(Icons.edit),
-                      label: const Text('Edit'),
-                    ),
-                  ],
+                BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, state) {
+                    final isAdmin = state is Authenticated && state.user.role == UserRole.administrator.name;
+
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton.icon(
+                          onPressed: () => onEdit(product),
+                          icon: const Icon(Icons.edit),
+                          label: Text(isAdmin ? 'Edit' : 'Update Stock'),
+                        ),
+                        if (isAdmin) ...[
+                          const SizedBox(width: 8),
+                          TextButton.icon(
+                            onPressed: () => onStatusChange(product, !product.isActive),
+                            icon: Icon(product.isActive ? Icons.visibility_off : Icons.visibility),
+                            label: Text(product.isActive ? 'Deactivate' : 'Activate'),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
                 ),
               ],
             ),

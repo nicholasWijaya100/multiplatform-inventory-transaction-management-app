@@ -139,12 +139,14 @@ class SideMenu extends StatelessWidget {
                 isSelected: navigationController.currentRoute == '/categories',
                 onTap: () => navigationController.navigateTo('/categories'),
               ),
-              _MenuItem(
-                icon: Icons.warehouse_outlined,
-                title: 'Warehouses',
-                isSelected: navigationController.currentRoute == '/warehouses',
-                onTap: () => navigationController.navigateTo('/warehouses'),
-              ),
+              // Only show warehouses to administrators
+              if (user.role == UserRole.administrator.name)
+                _MenuItem(
+                  icon: Icons.warehouse_outlined,
+                  title: 'Warehouses',
+                  isSelected: navigationController.currentRoute == '/warehouses',
+                  onTap: () => navigationController.navigateTo('/warehouses'),
+                ),
               _MenuItem(
                 icon: Icons.sync_alt_outlined,
                 title: 'Stock Transfer',

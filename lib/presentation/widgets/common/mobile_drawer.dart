@@ -120,14 +120,16 @@ class MobileDrawer extends StatelessWidget {
                             isSelected:
                             navigationController.currentRoute == '/categories',
                           ),
-                          _buildMenuItem(
-                            context: context,
-                            icon: Icons.warehouse_outlined,
-                            title: 'Warehouses',
-                            route: '/warehouses',
-                            isSelected:
-                            navigationController.currentRoute == '/warehouses',
-                          ),
+                          // Only show warehouses to administrators
+                          if (user.role == UserRole.administrator.name)
+                            _buildMenuItem(
+                              context: context,
+                              icon: Icons.warehouse_outlined,
+                              title: 'Warehouses',
+                              route: '/warehouses',
+                              isSelected:
+                              navigationController.currentRoute == '/warehouses',
+                            ),
                           _buildMenuItem(
                             context: context,
                             icon: Icons.sync_alt_outlined,

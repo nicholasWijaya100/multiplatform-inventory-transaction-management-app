@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../blocs/auth/auth_bloc.dart';
 import '../../../blocs/category/category_bloc.dart';
 import '../../../data/models/category_model.dart';
+import '../../../data/models/user_model.dart';
 import '../../widgets/categories/add_category_dialog.dart';
 import '../../widgets/categories/category_filters.dart';
 import '../../widgets/categories/category_list.dart';
@@ -48,6 +50,8 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final isSmallScreen = MediaQuery.of(context).size.width < 600;
+    final authState = context.watch<AuthBloc>().state;
+    final isAdmin = authState is Authenticated && authState.user.role == UserRole.administrator.name;
 
     return Scaffold(
       body: Container(
@@ -66,7 +70,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (!isSmallScreen)
+                if (!isSmallScreen && isAdmin)
                   ElevatedButton.icon(
                     onPressed: _showAddCategoryDialog,
                     icon: const Icon(Icons.add),
@@ -147,7 +151,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
           ],
         ),
       ),
-      floatingActionButton: isSmallScreen
+      floatingActionButton: isSmallScreen && isAdmin
           ? FloatingActionButton(
         onPressed: _showAddCategoryDialog,
         backgroundColor: Colors.blue[900],

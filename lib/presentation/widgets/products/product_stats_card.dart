@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../blocs/product/product_bloc.dart';
+import '../../../blocs/auth/auth_bloc.dart';
+import '../../../data/models/user_model.dart';
 import '../../../utils/formatter.dart';
 
 class ProductStatsCards extends StatelessWidget {
@@ -9,6 +11,8 @@ class ProductStatsCards extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSmallScreen = MediaQuery.of(context).size.width < 600;
+    final authState = context.watch<AuthBloc>().state;
+    final isAdmin = authState is Authenticated && authState.user.role == UserRole.administrator.name;
 
     return BlocBuilder<ProductBloc, ProductState>(
       builder: (context, state) {
@@ -35,12 +39,13 @@ class ProductStatsCards extends StatelessWidget {
             icon: Icons.category_outlined,
             color: Colors.green,
           ),
-          _StatCard(
-            title: 'Total Value',
-            value: Formatters.formatCurrency(state.totalValue),
-            icon: Icons.attach_money_outlined,
-            color: Colors.purple,
-          ),
+          if (isAdmin)
+            _StatCard(
+              title: 'Total Value',
+              value: Formatters.formatCurrency(state.totalValue),
+              icon: Icons.attach_money_outlined,
+              color: Colors.purple,
+            ),
         ];
 
         if (isSmallScreen) {
