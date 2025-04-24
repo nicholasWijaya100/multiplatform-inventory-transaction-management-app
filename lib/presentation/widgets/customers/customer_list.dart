@@ -153,132 +153,144 @@ class CustomerList extends StatelessWidget {
       );
     }
 
-    return Card(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columns: const [
-            DataColumn(label: Text('Customer')),
-            DataColumn(label: Text('Contact')),
-            DataColumn(label: Text('Location')),
-            DataColumn(label: Text('Orders')),
-            DataColumn(label: Text('Sales')),
-            DataColumn(label: Text('Status')),
-            DataColumn(label: Text('Actions')),
-          ],
-          rows: customers.map((customer) {
-            return DataRow(
-              cells: [
-                DataCell(
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: customer.isActive ? Colors.blue[900] : Colors.grey,
-                        child: Text(
-                          customer.name[0].toUpperCase(),
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        customer.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
+    return Scrollbar(
+      thumbVisibility: true,
+      controller: ScrollController(),
+      child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: constraints.minWidth),
+                  child: DataTable(
+                    columns: const [
+                      DataColumn(label: Text('Customer')),
+                      DataColumn(label: Text('Contact')),
+                      DataColumn(label: Text('Location')),
+                      DataColumn(label: Text('Orders')),
+                      DataColumn(label: Text('Sales')),
+                      DataColumn(label: Text('Status')),
+                      DataColumn(label: Text('Actions')),
                     ],
-                  ),
-                ),
-                DataCell(
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(customer.phone),
-                      if (customer.email != null)
-                        Text(
-                          customer.email!,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
+                    rows: customers.map((customer) {
+                      return DataRow(
+                        cells: [
+                          DataCell(
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: customer.isActive ? Colors.blue[900] : Colors.grey,
+                                  child: Text(
+                                    customer.name[0].toUpperCase(),
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  customer.name,
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                    ],
-                  ),
-                ),
-                DataCell(
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(customer.city),
-                      Text(
-                        customer.address,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                DataCell(
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      customer.totalOrders.toString(),
-                      style: TextStyle(
-                        color: Colors.blue[700],
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                DataCell(
-                  Text(
-                    Formatters.formatCurrency(customer.totalPurchases),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                DataCell(
-                  Switch(
-                    value: customer.isActive,
-                    onChanged: (value) => onStatusChange(customer, value),
-                  ),
-                ),
-                DataCell(
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => onEdit(customer),
-                        tooltip: 'Edit Customer',
-                      ),
-                      if (customer.totalOrders == 0)
-                        IconButton(
-                          icon: const Icon(
-                            Icons.delete_outline,
-                            color: Colors.red,
+                          DataCell(
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(customer.phone),
+                                if (customer.email != null)
+                                  Text(
+                                    customer.email!,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
-                          onPressed: () => _showDeleteConfirmation(context, customer),
-                          tooltip: 'Delete Customer',
-                        ),
-                    ],
+                          DataCell(
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(customer.city),
+                                Text(
+                                  customer.address,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          DataCell(
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.blue[50],
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                customer.totalOrders.toString(),
+                                style: TextStyle(
+                                  color: Colors.blue[700],
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            Text(
+                              Formatters.formatCurrency(customer.totalPurchases),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            Switch(
+                              value: customer.isActive,
+                              onChanged: (value) => onStatusChange(customer, value),
+                            ),
+                          ),
+                          DataCell(
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit),
+                                  onPressed: () => onEdit(customer),
+                                  tooltip: 'Edit Customer',
+                                ),
+                                if (customer.totalOrders == 0)
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () => _showDeleteConfirmation(context, customer),
+                                    tooltip: 'Delete Customer',
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
                   ),
                 ),
-              ],
+              ),
             );
-          }).toList(),
-        ),
+          }
       ),
     );
   }

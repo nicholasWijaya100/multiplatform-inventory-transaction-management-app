@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:inventory_app_revised/presentation/widgets/purchase_orders/receive_order_dialog.dart';
 import '../../../blocs/purchase/purchase_bloc.dart';
 import '../../../data/models/purchase_order_model.dart';
 import '../../../utils/formatter.dart';
@@ -369,17 +370,26 @@ class PurchaseOrderDetailsDialog extends StatelessWidget {
       ),
       itemBuilder: (context) {
         return nextStatuses.map((status) {
+          final statusName = status[0].toUpperCase() + status.substring(1);
           return PopupMenuItem(
             value: status,
-            child: Text(status[0].toUpperCase() + status.substring(1)),
+            child: Text(statusName),
           );
         }).toList();
       },
       onSelected: (newStatus) {
-        context.read<PurchaseBloc>().add(
-          UpdatePurchaseOrderStatus(order.id, newStatus),
-        );
-        Navigator.pop(context);
+        // Show warehouse selection dialog for receiving goods
+        if (order.status == 'confirmed' && newStatus == 'received') {
+          showDialog(
+            context: context,
+            builder: (context) => ReceiveOrderDialog(order: order),
+          );
+        } else {
+          context.read<PurchaseBloc>().add(
+            UpdatePurchaseOrderStatus(order.id, newStatus),
+          );
+          Navigator.pop(context);
+        }
       },
     );
   }

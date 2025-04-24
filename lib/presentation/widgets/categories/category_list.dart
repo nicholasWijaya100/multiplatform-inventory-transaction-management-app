@@ -104,81 +104,93 @@ class CategoryList extends StatelessWidget {
       );
     }
 
-    return Card(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columns: const [
-            DataColumn(label: Text('Name')),
-            DataColumn(label: Text('Description')),
-            DataColumn(label: Text('Products')),
-            DataColumn(label: Text('Status')),
-            DataColumn(label: Text('Actions')),
-          ],
-          rows: categories.map((category) {
-            return DataRow(
-              cells: [
-                DataCell(
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: category.isActive
-                            ? Colors.blue[900]
-                            : Colors.grey,
-                        radius: 16,
-                        child: Text(
-                          category.name[0].toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        category.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
+    return Scrollbar(
+      thumbVisibility: true,
+      controller: ScrollController(),
+      child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: constraints.minWidth),
+                  child: DataTable(
+                    columns: const [
+                      DataColumn(label: Text('Name')),
+                      DataColumn(label: Text('Description')),
+                      DataColumn(label: Text('Products')),
+                      DataColumn(label: Text('Status')),
+                      DataColumn(label: Text('Actions')),
                     ],
-                  ),
-                ),
-                DataCell(Text(category.description)),
-                DataCell(Text(category.productCount.toString())),
-                DataCell(
-                  Switch(
-                    value: category.isActive,
-                    onChanged: (value) => onStatusChange(category, value),
-                  ),
-                ),
-                DataCell(
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => onEdit(category),
-                        tooltip: 'Edit Category',
-                      ),
-                      if (category.productCount == 0)
-                        IconButton(
-                          icon: const Icon(
-                            Icons.delete_outline,
-                            color: Colors.red,
+                    rows: categories.map((category) {
+                      return DataRow(
+                        cells: [
+                          DataCell(
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: category.isActive
+                                      ? Colors.blue[900]
+                                      : Colors.grey,
+                                  radius: 16,
+                                  child: Text(
+                                    category.name[0].toUpperCase(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  category.name,
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
                           ),
-                          onPressed: () => _showDeleteConfirmation(
-                            context,
-                            category,
+                          DataCell(Text(category.description)),
+                          DataCell(Text(category.productCount.toString())),
+                          DataCell(
+                            Switch(
+                              value: category.isActive,
+                              onChanged: (value) => onStatusChange(category, value),
+                            ),
                           ),
-                          tooltip: 'Delete Category',
-                        ),
-                    ],
+                          DataCell(
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit),
+                                  onPressed: () => onEdit(category),
+                                  tooltip: 'Edit Category',
+                                ),
+                                if (category.productCount == 0)
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () => _showDeleteConfirmation(
+                                      context,
+                                      category,
+                                    ),
+                                    tooltip: 'Delete Category',
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
                   ),
                 ),
-              ],
+              ),
             );
-          }).toList(),
-        ),
+          }
       ),
     );
   }

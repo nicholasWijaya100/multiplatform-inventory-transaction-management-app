@@ -29,6 +29,7 @@ mixin _$PurchaseOrderModel {
   DateTime get updatedAt => throw _privateConstructorUsedError;
   DateTime? get deliveryDate => throw _privateConstructorUsedError;
   DateTime? get receivedDate => throw _privateConstructorUsedError;
+  String? get receivingWarehouseId => throw _privateConstructorUsedError;
 
   /// Create a copy of PurchaseOrderModel
   /// with the given fields replaced by the non-null parameter values.
@@ -56,7 +57,8 @@ abstract class $PurchaseOrderModelCopyWith<$Res> {
       DateTime createdAt,
       DateTime updatedAt,
       DateTime? deliveryDate,
-      DateTime? receivedDate});
+      DateTime? receivedDate,
+      String? receivingWarehouseId});
 }
 
 /// @nodoc
@@ -87,6 +89,7 @@ class _$PurchaseOrderModelCopyWithImpl<$Res, $Val extends PurchaseOrderModel>
     Object? updatedAt = null,
     Object? deliveryDate = freezed,
     Object? receivedDate = freezed,
+    Object? receivingWarehouseId = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -141,6 +144,10 @@ class _$PurchaseOrderModelCopyWithImpl<$Res, $Val extends PurchaseOrderModel>
           ? _value.receivedDate
           : receivedDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      receivingWarehouseId: freezed == receivingWarehouseId
+          ? _value.receivingWarehouseId
+          : receivingWarehouseId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -166,7 +173,8 @@ abstract class _$$PurchaseOrderModelImplCopyWith<$Res>
       DateTime createdAt,
       DateTime updatedAt,
       DateTime? deliveryDate,
-      DateTime? receivedDate});
+      DateTime? receivedDate,
+      String? receivingWarehouseId});
 }
 
 /// @nodoc
@@ -195,6 +203,7 @@ class __$$PurchaseOrderModelImplCopyWithImpl<$Res>
     Object? updatedAt = null,
     Object? deliveryDate = freezed,
     Object? receivedDate = freezed,
+    Object? receivingWarehouseId = freezed,
   }) {
     return _then(_$PurchaseOrderModelImpl(
       id: null == id
@@ -249,6 +258,10 @@ class __$$PurchaseOrderModelImplCopyWithImpl<$Res>
           ? _value.receivedDate
           : receivedDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      receivingWarehouseId: freezed == receivingWarehouseId
+          ? _value.receivingWarehouseId
+          : receivingWarehouseId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -269,7 +282,8 @@ class _$PurchaseOrderModelImpl extends _PurchaseOrderModel {
       required this.createdAt,
       required this.updatedAt,
       this.deliveryDate,
-      this.receivedDate})
+      this.receivedDate,
+      this.receivingWarehouseId})
       : _items = items,
         super._();
 
@@ -306,10 +320,12 @@ class _$PurchaseOrderModelImpl extends _PurchaseOrderModel {
   final DateTime? deliveryDate;
   @override
   final DateTime? receivedDate;
+  @override
+  final String? receivingWarehouseId;
 
   @override
   String toString() {
-    return 'PurchaseOrderModel(id: $id, supplierId: $supplierId, supplierName: $supplierName, status: $status, items: $items, totalAmount: $totalAmount, notes: $notes, paymentTerms: $paymentTerms, isPaid: $isPaid, createdAt: $createdAt, updatedAt: $updatedAt, deliveryDate: $deliveryDate, receivedDate: $receivedDate)';
+    return 'PurchaseOrderModel(id: $id, supplierId: $supplierId, supplierName: $supplierName, status: $status, items: $items, totalAmount: $totalAmount, notes: $notes, paymentTerms: $paymentTerms, isPaid: $isPaid, createdAt: $createdAt, updatedAt: $updatedAt, deliveryDate: $deliveryDate, receivedDate: $receivedDate, receivingWarehouseId: $receivingWarehouseId)';
   }
 
   @override
@@ -337,7 +353,9 @@ class _$PurchaseOrderModelImpl extends _PurchaseOrderModel {
             (identical(other.deliveryDate, deliveryDate) ||
                 other.deliveryDate == deliveryDate) &&
             (identical(other.receivedDate, receivedDate) ||
-                other.receivedDate == receivedDate));
+                other.receivedDate == receivedDate) &&
+            (identical(other.receivingWarehouseId, receivingWarehouseId) ||
+                other.receivingWarehouseId == receivingWarehouseId));
   }
 
   @override
@@ -355,7 +373,8 @@ class _$PurchaseOrderModelImpl extends _PurchaseOrderModel {
       createdAt,
       updatedAt,
       deliveryDate,
-      receivedDate);
+      receivedDate,
+      receivingWarehouseId);
 
   /// Create a copy of PurchaseOrderModel
   /// with the given fields replaced by the non-null parameter values.
@@ -381,7 +400,8 @@ abstract class _PurchaseOrderModel extends PurchaseOrderModel {
       required final DateTime createdAt,
       required final DateTime updatedAt,
       final DateTime? deliveryDate,
-      final DateTime? receivedDate}) = _$PurchaseOrderModelImpl;
+      final DateTime? receivedDate,
+      final String? receivingWarehouseId}) = _$PurchaseOrderModelImpl;
   const _PurchaseOrderModel._() : super._();
 
   @override
@@ -410,6 +430,8 @@ abstract class _PurchaseOrderModel extends PurchaseOrderModel {
   DateTime? get deliveryDate;
   @override
   DateTime? get receivedDate;
+  @override
+  String? get receivingWarehouseId;
 
   /// Create a copy of PurchaseOrderModel
   /// with the given fields replaced by the non-null parameter values.

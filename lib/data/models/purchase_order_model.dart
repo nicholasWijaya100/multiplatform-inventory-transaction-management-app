@@ -31,6 +31,7 @@ class PurchaseOrderModel with _$PurchaseOrderModel {
     required DateTime updatedAt,
     DateTime? deliveryDate,
     DateTime? receivedDate,
+    String? receivingWarehouseId,
   }) = _PurchaseOrderModel;
 
   // Custom fromJson factory

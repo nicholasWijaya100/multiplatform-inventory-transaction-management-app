@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import '../../data/models/purchase_order_model.dart';
 import '../../data/repositories/purchase_repository.dart';
 import '../../utils/service_locator.dart';
+import '../product/product_bloc.dart';
 import '../purchase_invoice/purchase_invoice_bloc.dart';
 
 // Events
@@ -36,6 +37,19 @@ class LoadPurchaseOrdersForPeriod extends PurchaseEvent {
 
   @override
   List<Object?> get props => [startDate, endDate];
+}
+
+class ReceivePurchaseOrder extends PurchaseEvent {
+  final String orderId;
+  final String warehouseId;
+
+  const ReceivePurchaseOrder({
+    required this.orderId,
+    required this.warehouseId,
+  });
+
+  @override
+  List<Object?> get props => [orderId, warehouseId];
 }
 
 class SearchPurchaseOrders extends PurchaseEvent {
@@ -178,6 +192,40 @@ class PurchaseBloc extends Bloc<PurchaseEvent, PurchaseState> {
     on<AddPurchaseOrder>(_onAddPurchaseOrder);
     on<UpdatePurchaseOrderStatus>(_onUpdatePurchaseOrderStatus);
     on<UpdatePurchaseOrderPaymentStatus>(_onUpdatePurchaseOrderPaymentStatus);
+    on<ReceivePurchaseOrder>(_onReceivePurchaseOrder);
+  }
+
+  Future<void> _onReceivePurchaseOrder(
+      ReceivePurchaseOrder event,
+      Emitter<PurchaseState> emit,
+      ) async {
+    emit(PurchaseLoading());
+    try {
+      // 1. Get the purchase order to access items
+      final order = await _purchaseRepository.getPurchaseOrder(event.orderId);
+
+      // 2. Update purchase order status to received
+      await _purchaseRepository.updatePurchaseOrderStatus(
+        event.orderId,
+        PurchaseOrderStatus.received.name,
+        event.warehouseId,
+      );
+
+      // 3. Update product inventory for each item
+      final productBloc = locator<ProductBloc>();
+      for (final item in order.items) {
+        productBloc.add(UpdateProductStock(
+          item.productId,
+          event.warehouseId,
+          item.quantity,
+        ));
+      }
+
+      add(LoadPurchaseOrders());
+    } catch (e) {
+      emit(PurchaseError(e.toString()));
+      add(LoadPurchaseOrders());
+    }
   }
 
   Future<void> _onLoadPurchaseOrders(

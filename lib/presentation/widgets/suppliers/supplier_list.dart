@@ -35,201 +35,213 @@ class SupplierList extends StatelessWidget {
       );
     }
 
-    return Card(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          horizontalMargin: 24,
-          columnSpacing: 32,
-          dataRowHeight: 72,
-          headingRowHeight: 56,
-          columns: const [
-            DataColumn(
-              label: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text('Supplier'),
-              ),
-            ),
-            DataColumn(
-              label: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text('Contact'),
-              ),
-            ),
-            DataColumn(
-              label: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text('Location'),
-              ),
-            ),
-            DataColumn(
-              label: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text('Orders'),
-              ),
-              numeric: true,
-            ),
-            DataColumn(
-              label: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text('Total Value'),
-              ),
-              numeric: true,
-            ),
-            DataColumn(
-              label: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text('Status'),
-              ),
-            ),
-            DataColumn(
-              label: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text('Actions'),
-              ),
-            ),
-          ],
-          rows: suppliers.map((supplier) {
-            return DataRow(
-              cells: [
-                DataCell(
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: supplier.isActive ? Colors.blue[900] : Colors.grey,
-                          child: Text(
-                            supplier.name[0].toUpperCase(),
-                            style: const TextStyle(color: Colors.white),
-                          ),
+    return Scrollbar(
+      thumbVisibility: true,
+      controller: ScrollController(),
+      child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: constraints.minWidth),
+                  child: DataTable(
+                    horizontalMargin: 24,
+                    columnSpacing: 32,
+                    dataRowHeight: 72,
+                    headingRowHeight: 56,
+                    columns: const [
+                      DataColumn(
+                        label: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          child: Text('Supplier'),
                         ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              supplier.name,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            if (supplier.description != null)
-                              Text(
-                                supplier.description!,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                DataCell(
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(supplier.phone),
-                        if (supplier.email != null)
-                          Text(
-                            supplier.email!,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                DataCell(
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(supplier.city),
-                        Text(
-                          supplier.address,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                DataCell(
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      supplier.totalOrders.toString(),
-                      style: TextStyle(
-                        color: Colors.blue[700],
-                        fontWeight: FontWeight.bold,
                       ),
-                    ),
-                  ),
-                ),
-                DataCell(
-                  Text(
-                    Formatters.formatCurrency(supplier.totalPurchases),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                DataCell(
-                  Switch(
-                    value: supplier.isActive,
-                    onChanged: (value) => onStatusChange(supplier, value),
-                  ),
-                ),
-                DataCell(
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => onEdit(supplier),
-                        tooltip: 'Edit Supplier',
-                      ),
-                      if (supplier.totalOrders == 0)
-                        IconButton(
-                          icon: const Icon(
-                            Icons.delete_outline,
-                            color: Colors.red,
-                          ),
-                          onPressed: () => _showDeleteConfirmation(
-                            context,
-                            supplier,
-                          ),
-                          tooltip: 'Delete Supplier',
+                      DataColumn(
+                        label: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          child: Text('Contact'),
                         ),
+                      ),
+                      DataColumn(
+                        label: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          child: Text('Location'),
+                        ),
+                      ),
+                      DataColumn(
+                        label: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          child: Text('Orders'),
+                        ),
+                        numeric: true,
+                      ),
+                      DataColumn(
+                        label: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          child: Text('Total Value'),
+                        ),
+                        numeric: true,
+                      ),
+                      DataColumn(
+                        label: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          child: Text('Status'),
+                        ),
+                      ),
+                      DataColumn(
+                        label: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          child: Text('Actions'),
+                        ),
+                      ),
                     ],
+                    rows: suppliers.map((supplier) {
+                      return DataRow(
+                        cells: [
+                          DataCell(
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: supplier.isActive ? Colors.blue[900] : Colors.grey,
+                                    child: Text(
+                                      supplier.name[0].toUpperCase(),
+                                      style: const TextStyle(color: Colors.white),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        supplier.name,
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                      if (supplier.description != null)
+                                        Text(
+                                          supplier.description!,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(supplier.phone),
+                                  if (supplier.email != null)
+                                    Text(
+                                      supplier.email!,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(supplier.city),
+                                  Text(
+                                    supplier.address,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.blue[50],
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                supplier.totalOrders.toString(),
+                                style: TextStyle(
+                                  color: Colors.blue[700],
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            Text(
+                              Formatters.formatCurrency(supplier.totalPurchases),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            Switch(
+                              value: supplier.isActive,
+                              onChanged: (value) => onStatusChange(supplier, value),
+                            ),
+                          ),
+                          DataCell(
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit),
+                                  onPressed: () => onEdit(supplier),
+                                  tooltip: 'Edit Supplier',
+                                ),
+                                if (supplier.totalOrders == 0)
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () => _showDeleteConfirmation(
+                                      context,
+                                      supplier,
+                                    ),
+                                    tooltip: 'Delete Supplier',
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
                   ),
                 ),
-              ],
+              ),
             );
-          }).toList(),
-        ),
+          }
       ),
     );
   }

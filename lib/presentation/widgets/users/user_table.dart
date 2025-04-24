@@ -79,54 +79,66 @@ class UserTable extends StatelessWidget {
       );
     }
 
-    return Card(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columns: const [
-            DataColumn(label: Text('Name')),
-            DataColumn(label: Text('Email')),
-            DataColumn(label: Text('Role')),
-            DataColumn(label: Text('Status')),
-            DataColumn(label: Text('Actions')),
-          ],
-          rows: users.map((user) {
-            return DataRow(
-              cells: [
-                DataCell(Text(user.name ?? '-')),
-                DataCell(Text(user.email)),
-                DataCell(Text(user.role)),
-                DataCell(
-                  Switch(
-                    value: user.isActive,
-                    onChanged: (value) => onStatusChange(user, value),
-                  ),
-                ),
-                DataCell(
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => onEdit(user),
-                        tooltip: 'Edit User',
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          user.isActive
-                              ? Icons.block_outlined
-                              : Icons.check_circle_outline,
-                        ),
-                        onPressed: () => onStatusChange(user, !user.isActive),
-                        tooltip: user.isActive ? 'Deactivate' : 'Activate',
-                      ),
+    return Scrollbar(
+      thumbVisibility: true,
+      controller: ScrollController(),
+      child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: constraints.minWidth),
+                  child: DataTable(
+                    columns: const [
+                      DataColumn(label: Text('Name')),
+                      DataColumn(label: Text('Email')),
+                      DataColumn(label: Text('Role')),
+                      DataColumn(label: Text('Status')),
+                      DataColumn(label: Text('Actions')),
                     ],
+                    rows: users.map((user) {
+                      return DataRow(
+                        cells: [
+                          DataCell(Text(user.name ?? '-')),
+                          DataCell(Text(user.email)),
+                          DataCell(Text(user.role)),
+                          DataCell(
+                            Switch(
+                              value: user.isActive,
+                              onChanged: (value) => onStatusChange(user, value),
+                            ),
+                          ),
+                          DataCell(
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit),
+                                  onPressed: () => onEdit(user),
+                                  tooltip: 'Edit User',
+                                ),
+                                IconButton(
+                                  icon: Icon(
+                                    user.isActive
+                                        ? Icons.block_outlined
+                                        : Icons.check_circle_outline,
+                                  ),
+                                  onPressed: () => onStatusChange(user, !user.isActive),
+                                  tooltip: user.isActive ? 'Deactivate' : 'Activate',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
                   ),
                 ),
-              ],
+              ),
             );
-          }).toList(),
-        ),
+          }
       ),
     );
   }

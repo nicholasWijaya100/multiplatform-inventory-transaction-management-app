@@ -30,68 +30,80 @@ class SalesOrderList extends StatelessWidget {
       );
     }
 
-    return Card(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columns: const [
-            DataColumn(label: Text('Order ID')),
-            DataColumn(label: Text('Customer')),
-            DataColumn(label: Text('Items')),
-            DataColumn(label: Text('Total')),
-            DataColumn(label: Text('Status')),
-            DataColumn(label: Text('Created')),
-            DataColumn(label: Text('Actions')),
-          ],
-          rows: orders.map((order) {
-            return DataRow(
-              cells: [
-                DataCell(Text('#${order.id}')),
-                DataCell(Text(order.customerName)),
-                DataCell(
-                  Text(order.items.length.toString()),
-                ),
-                DataCell(
-                  Text(
-                    Formatters.formatCurrency(order.totalAmount),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                DataCell(_buildStatusBadge(order.status)),
-                DataCell(Text(Formatters.formatDate(order.createdAt))),
-                DataCell(
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.visibility_outlined),
-                        onPressed: () => _showOrderDetails(context, order),
-                        tooltip: 'View Details',
-                      ),
-                      if (_getNextPossibleStatuses(order.status).isNotEmpty)
-                        PopupMenuButton<String>(
-                          tooltip: 'Update Status',
-                          itemBuilder: (context) {
-                            return _getNextPossibleStatuses(order.status)
-                                .map((status) => PopupMenuItem(
-                              value: status,
-                              child: Text(_formatStatus(status)),
-                            ))
-                                .toList();
-                          },
-                          onSelected: (newStatus) =>
-                              onStatusUpdate(order, newStatus),
-                          icon: const Icon(Icons.update),
-                        ),
+    return Scrollbar(
+      thumbVisibility: true,
+      controller: ScrollController(),
+      child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: constraints.minWidth),
+                  child: DataTable(
+                    columns: const [
+                      DataColumn(label: Text('Order ID')),
+                      DataColumn(label: Text('Customer')),
+                      DataColumn(label: Text('Items')),
+                      DataColumn(label: Text('Total')),
+                      DataColumn(label: Text('Status')),
+                      DataColumn(label: Text('Created')),
+                      DataColumn(label: Text('Actions')),
                     ],
+                    rows: orders.map((order) {
+                      return DataRow(
+                        cells: [
+                          DataCell(Text('#${order.id}')),
+                          DataCell(Text(order.customerName)),
+                          DataCell(
+                            Text(order.items.length.toString()),
+                          ),
+                          DataCell(
+                            Text(
+                              Formatters.formatCurrency(order.totalAmount),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          DataCell(_buildStatusBadge(order.status)),
+                          DataCell(Text(Formatters.formatDate(order.createdAt))),
+                          DataCell(
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.visibility_outlined),
+                                  onPressed: () => _showOrderDetails(context, order),
+                                  tooltip: 'View Details',
+                                ),
+                                if (_getNextPossibleStatuses(order.status).isNotEmpty)
+                                  PopupMenuButton<String>(
+                                    tooltip: 'Update Status',
+                                    itemBuilder: (context) {
+                                      return _getNextPossibleStatuses(order.status)
+                                          .map((status) => PopupMenuItem(
+                                        value: status,
+                                        child: Text(_formatStatus(status)),
+                                      ))
+                                          .toList();
+                                    },
+                                    onSelected: (newStatus) =>
+                                        onStatusUpdate(order, newStatus),
+                                    icon: const Icon(Icons.update),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
                   ),
                 ),
-              ],
+              ),
             );
-          }).toList(),
-        ),
+          }
       ),
     );
   }

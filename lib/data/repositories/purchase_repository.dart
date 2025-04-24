@@ -72,13 +72,25 @@ class PurchaseRepository {
     }
   }
 
-  Future<void> updatePurchaseOrderStatus(String orderId, String status) async {
+  Future<void> updatePurchaseOrderStatus(
+      String orderId,
+      String status,
+      [String? warehouseId]
+      ) async {
     try {
-      await _firestore.collection('purchase_orders').doc(orderId).update({
+      final updateData = {
         'status': status,
         'updatedAt': FieldValue.serverTimestamp(),
-        if (status == 'received') 'receivedDate': FieldValue.serverTimestamp(),
-      });
+      };
+
+      if (status == 'received') {
+        updateData['receivedDate'] = FieldValue.serverTimestamp();
+        if (warehouseId != null) {
+          updateData['receivingWarehouseId'] = warehouseId;
+        }
+      }
+
+      await _firestore.collection('purchase_orders').doc(orderId).update(updateData);
     } catch (e) {
       throw Exception('Failed to update purchase order status: ${e.toString()}');
     }
@@ -103,6 +115,25 @@ class PurchaseRepository {
       });
     } catch (e) {
       throw Exception('Failed to update purchase order payment status: ${e.toString()}');
+    }
+  }
+
+  Future<PurchaseOrderModel> getPurchaseOrder(String orderId) async {
+    try {
+      final docSnapshot = await _firestore
+          .collection('purchase_orders')
+          .doc(orderId)
+          .get();
+
+      if (!docSnapshot.exists) {
+        throw Exception('Purchase order not found');
+      }
+
+      final data = docSnapshot.data()!;
+      data['id'] = docSnapshot.id;
+      return PurchaseOrderModel.fromJson(data);
+    } catch (e) {
+      throw Exception('Failed to fetch purchase order: ${e.toString()}');
     }
   }
 

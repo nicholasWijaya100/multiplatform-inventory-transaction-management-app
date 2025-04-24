@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:inventory_app_revised/presentation/widgets/purchase_orders/purchase_order_details_dialog.dart';
+import 'package:inventory_app_revised/presentation/widgets/purchase_orders/receive_order_dialog.dart';
 import '../../../data/models/purchase_order_model.dart';
 import '../../../utils/formatter.dart';
 import 'purchase_order_card.dart';
@@ -33,134 +34,146 @@ class PurchaseOrderList extends StatelessWidget {
       );
     }
 
-    return Card(
+    return Scrollbar(
+      thumbVisibility: true,
+      controller: ScrollController(),
       child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          horizontalMargin: 24,
-          columnSpacing: 32,
-          dataRowHeight: 72,
-          headingRowHeight: 56,
-          columns: const [
-            DataColumn(
-              label: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text('Order ID'),
-              ),
-            ),
-            DataColumn(
-              label: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text('Supplier'),
-              ),
-            ),
-            DataColumn(
-              label: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text('Items'),
-              ),
-              numeric: true,
-            ),
-            DataColumn(
-              label: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text('Total'),
-              ),
-              numeric: true,
-            ),
-            DataColumn(
-              label: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text('Status'),
-              ),
-            ),
-            DataColumn(
-              label: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text('Created'),
-              ),
-            ),
-            DataColumn(
-              label: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text('Actions'),
-              ),
-            ),
-          ],
-          rows: orders.map((order) {
-            return DataRow(
-              cells: [
-                DataCell(
-                  Text(
-                    '#${order.id}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+        scrollDirection: Axis.vertical,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            horizontalMargin: 24,
+            columnSpacing: 32,
+            dataRowHeight: 72,
+            headingRowHeight: 56,
+            columns: const [
+              DataColumn(
+                label: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Text('Order ID'),
                 ),
-                DataCell(
-                  Text(order.supplierName),
+              ),
+              DataColumn(
+                label: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Text('Supplier'),
                 ),
-                DataCell(
-                  Text(order.items.length.toString()),
+              ),
+              DataColumn(
+                label: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Text('Items'),
                 ),
-                DataCell(
-                  Text(
-                    Formatters.formatCurrency(order.totalAmount),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                numeric: true,
+              ),
+              DataColumn(
+                label: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Text('Total'),
                 ),
-                DataCell(
-                  _buildStatusBadge(context, order.status),
+                numeric: true,
+              ),
+              DataColumn(
+                label: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Text('Status'),
                 ),
-                DataCell(
-                  Text(
-                    Formatters.formatDate(order.createdAt),
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
-                  ),
+              ),
+              DataColumn(
+                label: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Text('Created'),
                 ),
-                DataCell(
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.visibility_outlined),
-                        onPressed: () => showDialog(
-                          context: context,
-                          builder: (context) => PurchaseOrderDetailsDialog(
-                            order: order,
-                          ),
-                        ),
-                        tooltip: 'View Details',
+              ),
+              DataColumn(
+                label: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Text('Actions'),
+                ),
+              ),
+            ],
+            rows: orders.map((order) {
+              return DataRow(
+                cells: [
+                  DataCell(
+                    Text(
+                      '#${order.id}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
                       ),
-                      // Only show status update button if order is not completed or cancelled
-                      if (order.status != 'completed' && order.status != 'cancelled')
-                        PopupMenuButton<String>(
-                          tooltip: 'Update Status',
-                          itemBuilder: (context) {
-                            return _getNextPossibleStatuses(order.status)
-                                .map((status) => PopupMenuItem(
-                              value: status,
-                              child: Text(status),
-                            ))
-                                .toList();
-                          },
-                          onSelected: (newStatus) {
-                            onStatusUpdate(order, newStatus);
-                          },
-                          icon: const Icon(Icons.update),
-                        ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
-            );
-          }).toList(),
+                  DataCell(
+                    Text(order.supplierName),
+                  ),
+                  DataCell(
+                    Text(order.items.length.toString()),
+                  ),
+                  DataCell(
+                    Text(
+                      Formatters.formatCurrency(order.totalAmount),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  DataCell(
+                    _buildStatusBadge(context, order.status),
+                  ),
+                  DataCell(
+                    Text(
+                      Formatters.formatDate(order.createdAt),
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  DataCell(
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.visibility_outlined),
+                          onPressed: () => showDialog(
+                            context: context,
+                            builder: (context) => PurchaseOrderDetailsDialog(
+                              order: order,
+                            ),
+                          ),
+                          tooltip: 'View Details',
+                        ),
+                        // Only show status update button if order is not completed or cancelled
+                        if (order.status != 'completed' && order.status != 'cancelled')
+                          PopupMenuButton<String>(
+                            tooltip: 'Update Status',
+                            itemBuilder: (context) {
+                              return _getNextPossibleStatuses(order.status)
+                                  .map((status) => PopupMenuItem(
+                                value: status,
+                                child: Text(status),
+                              ))
+                                  .toList();
+                            },
+                            onSelected: (newStatus) {
+                              if (order.status == 'confirmed' && newStatus == 'received') {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => ReceiveOrderDialog(order: order),
+                                );
+                              } else {
+                                onStatusUpdate(order, newStatus);
+                              }
+                            },
+                            icon: const Icon(Icons.update),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
         ),
       ),
     );
