@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../blocs/auth/auth_bloc.dart';
 import '../../../blocs/customer/customer_bloc.dart';
@@ -12,6 +13,7 @@ import '../../../data/models/user_model.dart';
 import '../../../utils/formatter.dart';
 import '../../../utils/navigation_controller.dart';
 import '../../widgets/recent_activities.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -26,6 +28,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _loadDashboardData();
   }
+
+  DateTimeRange _chartDateRange = DateTimeRange(
+    start: DateTime.now().subtract(const Duration(days: 30)), // Last 30 days by default
+    end: DateTime.now(),
+  );
+
+  String _selectedPeriod = 'month';
 
   void _loadDashboardData() {
     final authState = context.read<AuthBloc>().state;
@@ -180,7 +189,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Different layout based on screen size
     if (isSmallScreen) {
       return SizedBox(
-        height: 130,
+        height: 150,
         child: ListView(
           scrollDirection: Axis.horizontal,
           children: _getDashboardCards(user, isSmallScreen),
@@ -212,7 +221,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   List<Widget> _getDashboardCards(UserModel user, bool isSmallScreen) {
     final List<Widget> cards = [];
-    final containerWidth = isSmallScreen ? 160.0 : 240.0;
+    final containerWidth = isSmallScreen ? 200.0 : 280.0;
 
     // Common cards for all roles - Product Stats
     cards.add(
@@ -442,14 +451,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // Sales vs Purchases Chart
         _buildChartCard(
           title: 'Business Performance',
-          child: SizedBox(
-            height: 200,
-            child: Center(
-              child: Text(
-                'Sales vs Purchases Chart',
-                style: TextStyle(color: Colors.grey[600]),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildPeriodSelector(),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 250,
+                child: _buildSalesVsPurchasesChart(),
               ),
-            ),
+            ],
           ),
         ),
 
@@ -463,6 +474,378 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _buildQuickAccessGrid(isSmallScreen),
       ],
     );
+  }
+
+  Widget _buildPeriodSelector() {
+    return Wrap(
+      spacing: 8,
+      children: [
+        _buildPeriodChip('Week', 'week'),
+        _buildPeriodChip('Month', 'month'),
+        _buildPeriodChip('Quarter', 'quarter'),
+        _buildPeriodChip('Year', 'year'),
+        _buildPeriodChip('Custom', 'custom'),
+      ],
+    );
+  }
+
+  Widget _buildPeriodChip(String label, String period) {
+    final isSelected = _selectedPeriod == period;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) {
+          // Add debug print to verify callback is triggered
+          print('Selected period: $period');
+
+          setState(() {
+            _selectedPeriod = period;
+
+            // Update the date range based on selection
+            final now = DateTime.now();
+            switch (period) {
+              case 'week':
+                _chartDateRange = DateTimeRange(
+                  start: now.subtract(const Duration(days: 7)),
+                  end: now,
+                );
+                break;
+              case 'month':
+                _chartDateRange = DateTimeRange(
+                  start: DateTime(now.year, now.month - 1, now.day),
+                  end: now,
+                );
+                break;
+              case 'quarter':
+                _chartDateRange = DateTimeRange(
+                  start: DateTime(now.year, now.month - 3, now.day),
+                  end: now,
+                );
+                break;
+              case 'year':
+                _chartDateRange = DateTimeRange(
+                  start: DateTime(now.year - 1, now.month, now.day),
+                  end: now,
+                );
+                break;
+              case 'custom':
+              // For custom, we'll show the date picker
+              // But first update the state to show it's selected
+                Future.delayed(Duration.zero, () => _showDateRangePicker(context));
+                break;
+            }
+
+            // Print the new date range to verify it's updated
+            print('New date range: ${_chartDateRange.start} to ${_chartDateRange.end}');
+
+            // Trigger data reload
+            _loadChartData();
+          });
+        }
+      },
+      backgroundColor: Colors.grey[200],
+      selectedColor: Colors.blue,
+      checkmarkColor: Colors.white,
+    );
+  }
+
+  Future<void> _showDateRangePicker(BuildContext context) async {
+    final pickedRange = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDateRange: _chartDateRange,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Colors.blue[800]!,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedRange != null) {
+      setState(() {
+        _chartDateRange = pickedRange;
+        // Keep 'custom' selected
+        _selectedPeriod = 'custom';
+        _loadChartData();
+      });
+    }
+  }
+
+  void _loadChartData() {
+    print('Loading data for range: ${_chartDateRange.start} to ${_chartDateRange.end}');
+
+    // Check if your BLoCs have these events implemented
+    try {
+      // If you haven't implemented the period-specific events yet,
+      // you can use your existing events with state variables:
+      context.read<SalesOrderBloc>().add(LoadSalesOrders());
+      context.read<PurchaseBloc>().add(LoadPurchaseOrders(showCompleted: true));
+
+      // Make the date range visible on UI to confirm it's changing
+      setState(() {
+        // This forces a rebuild to show the updated date range
+      });
+    } catch (e) {
+      print('Error loading chart data: $e');
+    }
+  }
+
+  Widget _buildSalesVsPurchasesChart() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Date range display
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            'Period: ${Formatters.formatDate(_chartDateRange.start)} - ${Formatters.formatDate(_chartDateRange.end)}',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+
+        // The chart (existing implementation)
+        Expanded(
+          child: BlocBuilder<SalesOrderBloc, SalesOrderState>(
+            builder: (context, salesState) {
+              return BlocBuilder<PurchaseBloc, PurchaseState>(
+                builder: (context, purchaseState) {
+                  if (salesState is SalesOrdersLoaded && purchaseState is PurchaseOrdersLoaded) {
+                    // Get the data
+                    final filteredSalesOrders = salesState.orders.where((order) {
+                      return order.createdAt.isAfter(_chartDateRange.start) &&
+                          order.createdAt.isBefore(_chartDateRange.end.add(const Duration(days: 1)));
+                    }).toList();
+
+                    final filteredPurchaseOrders = purchaseState.orders.where((order) {
+                      return order.createdAt.isAfter(_chartDateRange.start) &&
+                          order.createdAt.isBefore(_chartDateRange.end.add(const Duration(days: 1)));
+                    }).toList();
+
+                    // Calculate totals from filtered data
+                    final salesValue = filteredSalesOrders.fold<double>(
+                        0.0, (sum, order) => sum + order.totalAmount);
+
+                    final purchaseValue = filteredPurchaseOrders.fold<double>(
+                        0.0, (sum, order) => sum + order.totalAmount);
+
+                    final profit = salesValue - purchaseValue;
+
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 16, right: 16),
+                      child: Column(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: BarChart(
+                              BarChartData(
+                                alignment: BarChartAlignment.spaceAround,
+                                maxY: _getMaxValue([salesValue, purchaseValue, profit.abs()]) * 1.2,
+                                barTouchData: BarTouchData(
+                                  touchTooltipData: BarTouchTooltipData(
+                                    // tooltipBgColor: Colors.blueGrey.shade800,
+                                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                                      String value = '';
+                                      switch(groupIndex) {
+                                        case 0:
+                                          value = 'Sales: ${Formatters.formatCurrency(salesValue)}';
+                                          break;
+                                        case 1:
+                                          value = 'Purchases: ${Formatters.formatCurrency(purchaseValue)}';
+                                          break;
+                                        case 2:
+                                          value = 'Profit: ${Formatters.formatCurrency(profit)}';
+                                          break;
+                                      }
+                                      return BarTooltipItem(
+                                        value,
+                                        const TextStyle(color: Colors.white),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                titlesData: FlTitlesData(
+                                  show: true,
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      getTitlesWidget: (value, meta) {
+                                        String text = '';
+                                        switch(value.toInt()) {
+                                          case 0:
+                                            text = 'Sales';
+                                            break;
+                                          case 1:
+                                            text = 'Purchases';
+                                            break;
+                                          case 2:
+                                            text = 'Profit';
+                                            break;
+                                        }
+                                        return Padding(
+                                          padding: const EdgeInsets.only(top: 8.0),
+                                          child: Text(
+                                            text,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  leftTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 80, // Increase the reserved size
+                                      interval: _calculateInterval([salesValue, purchaseValue, profit.abs()]), // Add dynamic interval
+                                      getTitlesWidget: (value, meta) {
+                                        // Only show a few values to avoid crowding
+                                        if (value == 0 || value % _calculateInterval([salesValue, purchaseValue, profit.abs()]) == 0) {
+                                          // Shortened currency format for y-axis
+                                          final formatter = NumberFormat.compact(locale: 'id_ID');
+                                          return Padding(
+                                            padding: const EdgeInsets.only(right: 8),
+                                            child: Text(
+                                              'Rp ${formatter.format(value)}',
+                                              style: const TextStyle(fontSize: 10),
+                                              textAlign: TextAlign.right,
+                                            ),
+                                          );
+                                        }
+                                        return const SizedBox();
+                                      },
+                                    ),
+                                  ),
+                                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                ),
+                                borderData: FlBorderData(show: false),
+                                gridData: FlGridData(
+                                  show: true,
+                                  drawHorizontalLine: true,
+                                  drawVerticalLine: false,
+                                ),
+                                barGroups: [
+                                  // Sales bar
+                                  BarChartGroupData(
+                                    x: 0,
+                                    barRods: [
+                                      BarChartRodData(
+                                        toY: salesValue,
+                                        color: Colors.green,
+                                        borderRadius: BorderRadius.circular(4),
+                                        width: 40,
+                                      ),
+                                    ],
+                                  ),
+                                  // Purchases bar
+                                  BarChartGroupData(
+                                    x: 1,
+                                    barRods: [
+                                      BarChartRodData(
+                                        toY: purchaseValue,
+                                        color: Colors.red,
+                                        borderRadius: BorderRadius.circular(4),
+                                        width: 40,
+                                      ),
+                                    ],
+                                  ),
+                                  // Profit bar
+                                  BarChartGroupData(
+                                    x: 2,
+                                    barRods: [
+                                      BarChartRodData(
+                                        toY: profit,
+                                        color: profit >= 0 ? Colors.blue : Colors.orange,
+                                        borderRadius: BorderRadius.circular(4),
+                                        width: 40,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // Legend
+                          Expanded(
+                            flex: 1,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _buildLegendItem('Sales', Colors.green),
+                                const SizedBox(width: 24),
+                                _buildLegendItem('Purchases', Colors.red),
+                                const SizedBox(width: 24),
+                                _buildLegendItem('Profit', Colors.blue),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return const Center(child: CircularProgressIndicator());
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  double _calculateInterval(List<double> values) {
+    final maxValue = _getMaxValue(values);
+    // Create 4-5 divisions on the y-axis
+    if (maxValue <= 1000) return 200;
+    if (maxValue <= 10000) return 2000;
+    if (maxValue <= 100000) return 20000;
+    if (maxValue <= 1000000) return 200000;
+    if (maxValue <= 10000000) return 2000000;
+    return maxValue / 5; // Default to 5 divisions
+  }
+
+  // Helper methods for the chart
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  double _getMaxValue(List<double> values) {
+    return values.reduce((curr, next) => curr > next ? curr : next);
   }
 
   Widget _buildSalesSection(bool isSmallScreen) {
@@ -959,7 +1342,7 @@ class _DashboardCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+            padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               boxShadow: [

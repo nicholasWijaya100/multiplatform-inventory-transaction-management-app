@@ -1,9 +1,15 @@
 import 'package:intl/intl.dart';
 
 class Formatters {
+  // static final _currencyFormatter = NumberFormat.currency(
+  //   symbol: '\$',
+  //   decimalDigits: 2,
+  // );
+
   static final _currencyFormatter = NumberFormat.currency(
-    symbol: '\$',
-    decimalDigits: 2,
+    locale: 'id_ID',  // Indonesian locale
+    symbol: 'Rp ',
+    decimalDigits: 0, // No decimal digits for Rupiah
   );
 
   static String formatCurrency(double amount) {

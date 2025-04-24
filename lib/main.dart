@@ -34,10 +34,12 @@ void main() async {
   );
   setupServiceLocator();
   await InitialSetup.checkAndCreateAdminUser();
+
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
+
   const MyApp({Key? key}) : super(key: key);
 
   @override

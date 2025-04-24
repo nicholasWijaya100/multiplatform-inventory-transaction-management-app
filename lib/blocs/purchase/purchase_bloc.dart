@@ -25,6 +25,19 @@ class LoadPurchaseOrders extends PurchaseEvent {
   List<Object?> get props => [showCompleted];
 }
 
+class LoadPurchaseOrdersForPeriod extends PurchaseEvent {
+  final DateTime startDate;
+  final DateTime endDate;
+
+  const LoadPurchaseOrdersForPeriod({
+    required this.startDate,
+    required this.endDate,
+  });
+
+  @override
+  List<Object?> get props => [startDate, endDate];
+}
+
 class SearchPurchaseOrders extends PurchaseEvent {
   final String query;
 

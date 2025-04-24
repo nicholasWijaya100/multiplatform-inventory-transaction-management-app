@@ -33,6 +33,19 @@ class FilterSalesOrdersByCustomer extends SalesOrderEvent {
   List<Object?> get props => [customerId];
 }
 
+class LoadSalesOrdersForPeriod extends SalesOrderEvent {
+  final DateTime startDate;
+  final DateTime endDate;
+
+  const LoadSalesOrdersForPeriod({
+    required this.startDate,
+    required this.endDate,
+  });
+
+  @override
+  List<Object?> get props => [startDate, endDate];
+}
+
 class FilterSalesOrdersByStatus extends SalesOrderEvent {
   final String? status;
 
