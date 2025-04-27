@@ -14,12 +14,14 @@ import 'blocs/purchase_invoice/purchase_invoice_bloc.dart';
 import 'blocs/supplier/supplier_bloc.dart';
 import 'blocs/users/users_bloc.dart';
 import 'blocs/warehouse/warehouse_bloc.dart';
+import 'chatbot_provider.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/category_repository.dart';
 import 'data/repositories/product_repository.dart';
 import 'data/repositories/supplier_repository.dart';
 import 'data/repositories/user_repository.dart';
 import 'data/repositories/warehouse_repository.dart';
+import 'data/services/chatbot_service.dart';
 import 'firebase_options.dart';
 import 'utils/service_locator.dart';
 import 'utils/initial_setup.dart';
@@ -35,17 +37,27 @@ void main() async {
   setupServiceLocator();
   await InitialSetup.checkAndCreateAdminUser();
 
-  runApp(MyApp());
+  const geminiApiKey = 'AIzaSyCZ_8S1-6UmDBIJW-5rRt0tzqmXeQGfIWA';
+
+  runApp(MyApp(geminiApiKey: geminiApiKey));
 }
 
 class MyApp extends StatelessWidget {
+  final String geminiApiKey;
 
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({Key? key, required this.geminiApiKey}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        ChangeNotifierProvider(
+          create: (context) => ChatbotProvider(
+            chatbotService: ChatbotService(
+              apiKey: geminiApiKey,
+            ),
+          ),
+        ),
         BlocProvider<AuthBloc>(
           create: (context) => locator<AuthBloc>()..add(AuthCheckRequested()),
         ),

@@ -257,6 +257,18 @@ class SideMenu extends StatelessWidget {
           ),
         ],
 
+        _MenuGroup(
+          title: 'Tools',
+          children: [
+            _MenuItem(
+              icon: Icons.chat_outlined,
+              title: 'Inventory Assistant',
+              isSelected: navigationController.currentRoute == '/chatbot',
+              onTap: () => navigationController.navigateTo('/chatbot'),
+            ),
+          ],
+        ),
+
         // Common sections available to all users
         const Divider(height: 32),
         _MenuItem(

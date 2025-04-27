@@ -235,6 +235,14 @@ class MobileDrawer extends StatelessWidget {
                         _buildMenuItem(
                           context: context,
                           icon: Icons.settings_outlined,
+                          title: 'Inventory Assistant',
+                          route: '/chatbot',
+                          isSelected:
+                          navigationController.currentRoute == '/settings',
+                        ),
+                        _buildMenuItem(
+                          context: context,
+                          icon: Icons.settings_outlined,
                           title: 'Settings',
                           route: '/settings',
                           isSelected:
