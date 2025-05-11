@@ -94,6 +94,26 @@ class SupplierRepository {
     }
   }
 
+  Future<void> updateSupplierPurchaseStats(String supplierId, double amount) async {
+    try {
+      final supplierDoc = await _firestore.collection('suppliers').doc(supplierId).get();
+      if (!supplierDoc.exists) {
+        throw Exception('Supplier not found');
+      }
+
+      final currentOrders = (supplierDoc.data()?['totalOrders'] as num?)?.toInt() ?? 0;
+      final currentPurchases = (supplierDoc.data()?['totalPurchases'] as num?)?.toDouble() ?? 0.0;
+
+      await _firestore.collection('suppliers').doc(supplierId).update({
+        'totalOrders': currentOrders + 1,
+        'totalPurchases': currentPurchases + amount,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to update supplier purchase stats: ${e.toString()}');
+    }
+  }
+
   Future<void> deleteSupplier(String supplierId) async {
     try {
       // Check if supplier has orders

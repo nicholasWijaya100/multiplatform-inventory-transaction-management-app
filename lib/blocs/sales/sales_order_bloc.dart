@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../data/models/sales_order_model.dart';
+import '../../data/repositories/customer_repository.dart';
 import '../../data/repositories/sales_order_repository.dart';
 import '../../utils/service_locator.dart';
 import '../invoice/invoice_bloc.dart';
@@ -222,7 +223,15 @@ class SalesOrderBloc extends Bloc<SalesOrderEvent, SalesOrderState> {
       ) async {
     emit(SalesOrderLoading());
     try {
-      await _salesOrderRepository.addSalesOrder(event.order);
+      final order = await _salesOrderRepository.addSalesOrder(event.order);
+
+      // Update customer purchase stats
+      final customerRepository = locator<CustomerRepository>();
+      await customerRepository.updateCustomerPurchaseStats(
+        order.customerId,
+        order.totalAmount,
+      );
+
       add(LoadSalesOrders());
     } catch (e) {
       emit(SalesOrderError(e.toString()));

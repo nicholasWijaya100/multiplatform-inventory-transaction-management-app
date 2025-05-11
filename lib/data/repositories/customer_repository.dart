@@ -95,6 +95,26 @@ class CustomerRepository {
     }
   }
 
+  Future<void> updateCustomerPurchaseStats(String customerId, double amount) async {
+    try {
+      final customerDoc = await _firestore.collection('customers').doc(customerId).get();
+      if (!customerDoc.exists) {
+        throw Exception('Customer not found');
+      }
+
+      final currentOrders = (customerDoc.data()?['totalOrders'] as num?)?.toInt() ?? 0;
+      final currentPurchases = (customerDoc.data()?['totalPurchases'] as num?)?.toDouble() ?? 0.0;
+
+      await _firestore.collection('customers').doc(customerId).update({
+        'totalOrders': currentOrders + 1,
+        'totalPurchases': currentPurchases + amount,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to update customer purchase stats: ${e.toString()}');
+    }
+  }
+
   Future<void> deleteCustomer(String customerId) async {
     try {
       // Check if customer has orders

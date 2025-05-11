@@ -1,3 +1,5 @@
+// lib/data/services/chatbot_service.dart
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../models/product_model.dart';
@@ -14,6 +16,17 @@ class ChatbotService {
   // History will store conversation context
   final List<Content> _history = [];
 
+  // Conversation memory to track entities mentioned across turns
+  final Map<String, List<String>> _conversationMemory = {
+    'products': [],
+    'customers': [],
+    'suppliers': [],
+    'warehouses': [],
+  };
+
+  // Most recent query classification
+  Map<String, double> _lastQueryClassification = {};
+
   ChatbotService({
     FirebaseFirestore? firestore,
     required String apiKey,
@@ -23,7 +36,7 @@ class ChatbotService {
           model: 'gemini-1.5-pro',
           apiKey: apiKey,
           systemInstruction: Content.text(
-            'You are a helpful assistant for an inventory management system. Answer questions about products, customers, sales, purchases, and inventory levels. Use only the data provided to you for answering questions. If you don\'t have the data needed to answer, tell the user that more information is needed. Always be polite and professional.',
+            'You are a helpful assistant for an inventory management system. Answer questions about products, customers, sales, purchases, and inventory levels. Use only the data provided to you for answering questions. If you don\'t have the data needed to answer, tell the user that more information is needed. Always be polite and professional. For numerical data, format currency with proper symbols and use appropriate units for quantities. When discussing inventory levels, emphasize if items are low in stock (less than 10 units). For financial questions, mention the total values and highlight significant trends if visible in the data.',
           ),
         );
 
@@ -34,17 +47,29 @@ class ChatbotService {
       final userMessage = Content.text(message);
       _history.add(userMessage);
 
+      // Manage conversation history size
+      _manageConversationHistory();
+
+      // Classify the query type
+      _lastQueryClassification = await _classifyQuery(message);
+
       // Extract entities from the message to help with retrieval
       final entities = await _extractEntities(message);
 
-      // Retrieve relevant data based on the entities
-      final retrievedData = await _retrieveRelevantData(entities, message);
+      // Update conversation memory with new entities
+      _updateMemory(entities);
 
-      // Construct the prompt with the retrieved data
-      final prompt = _constructPrompt(message, retrievedData);
+      // Combine current entities with memory to improve context
+      final enhancedEntities = _enhanceEntitiesWithMemory(entities);
+
+      // Retrieve relevant data based on the entities
+      final retrievedData = await _retrieveRelevantData(enhancedEntities, message);
+
+      // Enrich the prompt with domain-specific logic
+      final enrichedPrompt = _enrichQueryWithDomainLogic(message, retrievedData);
 
       // Create content with retrieved data for context
-      final modelContent = Content.text(prompt);
+      final modelContent = Content.text(enrichedPrompt);
 
       // Create the chat session with history
       final chat = _model.startChat(history: _history);
@@ -52,17 +77,150 @@ class ChatbotService {
       // Generate response
       final response = await chat.sendMessage(modelContent);
 
-      // Add response to history
-      _history.add(Content.text(response.text ?? 'I encountered an error processing your request.'));
+      // Check for empty response or generic fallback
+      String responseText = response.text ?? 'I encountered an error processing your request.';
 
-      return response.text ?? 'I encountered an error processing your request.';
+      if (responseText.isEmpty ||
+          responseText.contains("I don't have enough information")) {
+        responseText = _generateFallbackResponse(message);
+      }
+
+      // Add response to history
+      _history.add(Content.text(responseText));
+
+      return responseText;
     } catch (e) {
-      return 'Error: ${e.toString()}';
+      print('Error in chatbot: ${e.toString()}');
+      return _generateFallbackResponse(message);
     }
   }
 
-  /// Extracts entities from the user message
+  /// Manages the size of the conversation history
+  void _manageConversationHistory() {
+    // Keep history within reasonable limits
+    if (_history.length > 20) {
+      // Remove older messages but keep the first message (system instructions)
+      _history.removeRange(1, _history.length - 19);
+    }
+  }
+
+  /// Updates the conversation memory with new entities
+  void _updateMemory(Map<String, List<String>> entities) {
+    for (final entry in entities.entries) {
+      if (entry.value.isNotEmpty) {
+        // Only store entities in memory that have a persistent representation
+        if (_conversationMemory.containsKey(entry.key)) {
+          _conversationMemory[entry.key] = [
+            ...(_conversationMemory[entry.key] ?? []),
+            ...entry.value,
+          ].toSet().toList().cast<String>(); // Ensure uniqueness and correct type
+        }
+      }
+    }
+  }
+
+  /// Enhances current entities with memory
+  Map<String, List<String>> _enhanceEntitiesWithMemory(Map<String, List<String>> currentEntities) {
+    final enhancedEntities = Map<String, List<String>>.from(currentEntities);
+
+    // Only add memory entities if no entities of that type were found in the current message
+    for (final entry in _conversationMemory.entries) {
+      if (currentEntities[entry.key]?.isEmpty ?? true) {
+        // Prioritize recent memory - take up to 3 most recent items from memory
+        final recentMemory = entry.value.length > 3
+            ? entry.value.sublist(entry.value.length - 3)
+            : entry.value;
+
+        enhancedEntities[entry.key] = recentMemory;
+      }
+    }
+
+    return enhancedEntities;
+  }
+
+  /// Classifies the query to understand intent
+  Future<Map<String, double>> _classifyQuery(String message) async {
+    final lowerMessage = message.toLowerCase();
+
+    // Simple rule-based classification
+    Map<String, double> classification = {
+      'inventory_query': 0.0,
+      'sales_query': 0.0,
+      'purchasing_query': 0.0,
+      'customer_query': 0.0,
+      'supplier_query': 0.0,
+      'warehouse_query': 0.0,
+      'reporting_query': 0.0,
+      'low_stock_query': 0.0,
+    };
+
+    // Inventory related keywords
+    if (lowerMessage.contains('stock') ||
+        lowerMessage.contains('inventory') ||
+        lowerMessage.contains('product') ||
+        lowerMessage.contains('item')) {
+      classification['inventory_query'] = 0.8;
+    }
+
+    // Sales related keywords
+    if (lowerMessage.contains('sale') ||
+        lowerMessage.contains('revenue') ||
+        lowerMessage.contains('income') ||
+        lowerMessage.contains('sold')) {
+      classification['sales_query'] = 0.7;
+    }
+
+    // Purchase related keywords
+    if (lowerMessage.contains('purchase') ||
+        lowerMessage.contains('buy') ||
+        lowerMessage.contains('procurement') ||
+        lowerMessage.contains('order')) {
+      classification['purchasing_query'] = 0.7;
+    }
+
+    // Customer related keywords
+    if (lowerMessage.contains('customer') ||
+        lowerMessage.contains('client') ||
+        lowerMessage.contains('buyer')) {
+      classification['customer_query'] = 0.7;
+    }
+
+    // Supplier related keywords
+    if (lowerMessage.contains('supplier') ||
+        lowerMessage.contains('vendor') ||
+        lowerMessage.contains('provider')) {
+      classification['supplier_query'] = 0.7;
+    }
+
+    // Warehouse related keywords
+    if (lowerMessage.contains('warehouse') ||
+        lowerMessage.contains('storage') ||
+        lowerMessage.contains('location')) {
+      classification['warehouse_query'] = 0.7;
+    }
+
+    // Report related keywords
+    if (lowerMessage.contains('report') ||
+        lowerMessage.contains('analysis') ||
+        lowerMessage.contains('statistic') ||
+        lowerMessage.contains('summary')) {
+      classification['reporting_query'] = 0.7;
+    }
+
+    // Low stock specific query
+    if (lowerMessage.contains('low stock') ||
+        lowerMessage.contains('out of stock') ||
+        lowerMessage.contains('reorder') ||
+        lowerMessage.contains('running low')) {
+      classification['low_stock_query'] = 0.9;
+    }
+
+    return classification;
+  }
+
+  /// Extracts entities from the user message with improved matching
   Future<Map<String, List<String>>> _extractEntities(String message) async {
+    final messageLower = message.toLowerCase();
     final Map<String, List<String>> entities = {
       'products': [],
       'customers': [],
@@ -74,50 +232,188 @@ class ChatbotService {
 
     // Extract product names
     final productSnapshot = await _firestore.collection('products').get();
-    for (final doc in productSnapshot.docs) {
-      final productName = doc.data()['name'] as String;
-      if (message.toLowerCase().contains(productName.toLowerCase())) {
-        entities['products']!.add(doc.id);
+    final allProducts = productSnapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = doc.id;
+      return data;
+    }).toList();
+
+    // Use semantic search for products
+    if (messageLower.contains('product') ||
+        messageLower.contains('item') ||
+        messageLower.contains('stock')) {
+      entities['products'] = await _semanticSearch(
+          messageLower,
+          allProducts,
+          'name'
+      );
+    } else {
+      // Direct matching for specific product mentions
+      for (final product in allProducts) {
+        final productName = product['name'] as String;
+        if (messageLower.contains(productName.toLowerCase()) ||
+            _fuzzyMatch(messageLower, productName.toLowerCase())) {
+          entities['products']!.add(product['id'] as String);
+        }
       }
     }
 
     // Extract customer names
     final customerSnapshot = await _firestore.collection('customers').get();
-    for (final doc in customerSnapshot.docs) {
-      final customerName = doc.data()['name'] as String;
-      if (message.toLowerCase().contains(customerName.toLowerCase())) {
-        entities['customers']!.add(doc.id);
+    final allCustomers = customerSnapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = doc.id;
+      return data;
+    }).toList();
+
+    // Use semantic search for customers
+    if (messageLower.contains('customer') ||
+        messageLower.contains('client') ||
+        messageLower.contains('buyer')) {
+      entities['customers'] = await _semanticSearch(
+          messageLower,
+          allCustomers,
+          'name'
+      );
+    } else {
+      // Direct matching for specific customer mentions
+      for (final customer in allCustomers) {
+        final customerName = customer['name'] as String;
+        if (messageLower.contains(customerName.toLowerCase())) {
+          entities['customers']!.add(customer['id'] as String);
+        }
       }
     }
 
     // Extract supplier names
     final supplierSnapshot = await _firestore.collection('suppliers').get();
-    for (final doc in supplierSnapshot.docs) {
-      final supplierName = doc.data()['name'] as String;
-      if (message.toLowerCase().contains(supplierName.toLowerCase())) {
-        entities['suppliers']!.add(doc.id);
+    final allSuppliers = supplierSnapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = doc.id;
+      return data;
+    }).toList();
+
+    // Use semantic search for suppliers
+    if (messageLower.contains('supplier') ||
+        messageLower.contains('vendor') ||
+        messageLower.contains('provider')) {
+      entities['suppliers'] = await _semanticSearch(
+          messageLower,
+          allSuppliers,
+          'name'
+      );
+    } else {
+      // Direct matching for specific supplier mentions
+      for (final supplier in allSuppliers) {
+        final supplierName = supplier['name'] as String;
+        if (messageLower.contains(supplierName.toLowerCase())) {
+          entities['suppliers']!.add(supplier['id'] as String);
+        }
       }
     }
 
     // Extract warehouse names
     final warehouseSnapshot = await _firestore.collection('warehouses').get();
-    for (final doc in warehouseSnapshot.docs) {
-      final warehouseName = doc.data()['name'] as String;
-      if (message.toLowerCase().contains(warehouseName.toLowerCase())) {
-        entities['warehouses']!.add(doc.id);
+    final allWarehouses = warehouseSnapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = doc.id;
+      return data;
+    }).toList();
+
+    // Use semantic search for warehouses
+    if (messageLower.contains('warehouse') ||
+        messageLower.contains('location') ||
+        messageLower.contains('storage')) {
+      entities['warehouses'] = await _semanticSearch(
+          messageLower,
+          allWarehouses,
+          'name'
+      );
+    } else {
+      // Direct matching for specific warehouse mentions
+      for (final warehouse in allWarehouses) {
+        final warehouseName = warehouse['name'] as String;
+        if (messageLower.contains(warehouseName.toLowerCase())) {
+          entities['warehouses']!.add(warehouse['id'] as String);
+        }
       }
     }
 
-    // For sales and purchases, we'll check for order IDs
-    if (message.toLowerCase().contains('sales') || message.toLowerCase().contains('order')) {
+    // For sales and purchases, check for order IDs or general mentions
+    if (messageLower.contains('sales') ||
+        messageLower.contains('order') ||
+        messageLower.contains('invoice') ||
+        messageLower.contains('revenue')) {
       entities['sales'] = ['all'];
     }
 
-    if (message.toLowerCase().contains('purchase') || message.toLowerCase().contains('order')) {
+    if (messageLower.contains('purchase') ||
+        messageLower.contains('buy') ||
+        messageLower.contains('procurement') ||
+        messageLower.contains('order')) {
       entities['purchases'] = ['all'];
     }
 
     return entities;
+  }
+
+  /// Simple fuzzy matching function
+  bool _fuzzyMatch(String source, String target) {
+    // Skip very short strings to avoid false positives
+    if (target.length < 4) return false;
+
+    // Check for substring matches with some tolerance for variations
+    return source.contains(target.substring(0, target.length - 1)) ||
+        (target.length > 5 && source.contains(target.substring(0, target.length - 2)));
+  }
+
+  /// Semantic search implementation
+  Future<List<String>> _semanticSearch(
+      String query,
+      List<Map<String, dynamic>> documents,
+      String fieldName
+      ) async {
+    // Extract meaningful words from the query, ignoring common stopwords
+    final stopwords = ['the', 'and', 'is', 'in', 'at', 'on', 'to', 'for', 'with', 'by'];
+    final queryWords = query.toLowerCase().split(' ')
+        .where((word) => word.length > 3 && !stopwords.contains(word))
+        .toList();
+
+    Map<String, int> matchScores = {};
+
+    for (final doc in documents) {
+      final content = (doc[fieldName] as String).toLowerCase();
+      int score = 0;
+
+      // Check direct word matches
+      for (final word in queryWords) {
+        if (content.contains(word)) {
+          score += 2; // Direct matches score more
+        } else if (word.length > 4 && content.contains(word.substring(0, word.length - 1))) {
+          score += 1; // Partial matches
+        }
+      }
+
+      // Consider other fields for additional context
+      if (doc.containsKey('description') && doc['description'] != null) {
+        final description = (doc['description'] as String).toLowerCase();
+        for (final word in queryWords) {
+          if (description.contains(word)) {
+            score += 1; // Matches in description
+          }
+        }
+      }
+
+      if (score > 0) {
+        matchScores[doc['id'] as String] = score;
+      }
+    }
+
+    // Sort by score and return top matches
+    final sortedMatches = matchScores.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return sortedMatches.take(3).map((e) => e.key).toList();
   }
 
   /// Retrieves relevant data from Firestore based on entities and the query
@@ -126,28 +422,17 @@ class ChatbotService {
       String message
       ) async {
     final Map<String, dynamic> retrievedData = {};
+    final messageLower = message.toLowerCase();
 
-    // Determine what kind of query it is
-    final isProductQuery = message.toLowerCase().contains('product') ||
-        message.toLowerCase().contains('inventory') ||
-        message.toLowerCase().contains('stock');
-
-    final isCustomerQuery = message.toLowerCase().contains('customer') ||
-        message.toLowerCase().contains('client');
-
-    final isSupplierQuery = message.toLowerCase().contains('supplier') ||
-        message.toLowerCase().contains('vendor');
-
-    final isWarehouseQuery = message.toLowerCase().contains('warehouse') ||
-        message.toLowerCase().contains('location');
-
-    final isSalesQuery = message.toLowerCase().contains('sales') ||
-        message.toLowerCase().contains('selling') ||
-        message.toLowerCase().contains('revenue');
-
-    final isPurchaseQuery = message.toLowerCase().contains('purchase') ||
-        message.toLowerCase().contains('buying') ||
-        message.toLowerCase().contains('procurement');
+    // Determine what kind of query it is based on the classification
+    final isProductQuery = _lastQueryClassification['inventory_query']! > 0.5;
+    final isCustomerQuery = _lastQueryClassification['customer_query']! > 0.5;
+    final isSupplierQuery = _lastQueryClassification['supplier_query']! > 0.5;
+    final isWarehouseQuery = _lastQueryClassification['warehouse_query']! > 0.5;
+    final isSalesQuery = _lastQueryClassification['sales_query']! > 0.5;
+    final isPurchaseQuery = _lastQueryClassification['purchasing_query']! > 0.5;
+    final isReportingQuery = _lastQueryClassification['reporting_query']! > 0.5;
+    final isLowStockQuery = _lastQueryClassification['low_stock_query']! > 0.5;
 
     // Retrieve product data
     if (isProductQuery || entities['products']!.isNotEmpty) {
@@ -287,6 +572,22 @@ class ChatbotService {
       }
 
       retrievedData['salesOrders'] = salesOrders;
+
+      // If asking about total sales, also get aggregate data
+      if (messageLower.contains('total sales') ||
+          messageLower.contains('sales total') ||
+          messageLower.contains('revenue')) {
+        try {
+          // Sum up the totals from retrieved orders
+          double totalSales = 0;
+          for (final order in salesOrders) {
+            totalSales += (order['totalAmount'] as num).toDouble();
+          }
+          retrievedData['totalSales'] = totalSales;
+        } catch (e) {
+          print('Error calculating total sales: $e');
+        }
+      }
     }
 
     // Retrieve purchase order data
@@ -309,7 +610,7 @@ class ChatbotService {
     }
 
     // If nothing was retrieved but we have a query about low stock
-    if (retrievedData.isEmpty && message.toLowerCase().contains('low stock')) {
+    if ((retrievedData.isEmpty || isLowStockQuery) && messageLower.contains('low stock')) {
       final querySnapshot = await _firestore.collection('products')
           .where('quantity', isLessThan: 10)
           .where('isActive', isEqualTo: true)
@@ -326,8 +627,8 @@ class ChatbotService {
     }
 
     // If asking about total inventory value
-    if (message.toLowerCase().contains('total value') ||
-        message.toLowerCase().contains('inventory value')) {
+    if (messageLower.contains('total value') ||
+        messageLower.contains('inventory value')) {
       final warehouseSnapshot = await _firestore.collection('warehouses').get();
 
       double totalValue = 0;
@@ -341,10 +642,80 @@ class ChatbotService {
     return retrievedData;
   }
 
+  /// Enriches queries with domain-specific context
+  String _enrichQueryWithDomainLogic(String message, Map<String, dynamic> retrievedData) {
+    final lowerMessage = message.toLowerCase();
+
+    // Handle inventory forecasting questions
+    if (lowerMessage.contains('forecast') ||
+        lowerMessage.contains('predict') ||
+        lowerMessage.contains('future stock')) {
+      return '''
+${_constructPrompt(message, retrievedData)}
+
+Additional Context: The user is asking about inventory forecasting. When responding:
+1. Consider current stock levels and historical consumption rates if available
+2. Mention that accurate forecasting requires analysis of historical data
+3. Suggest reviewing purchase and sales history for better predictions
+4. Recommend regular stock audits and setting reorder points
+''';
+    }
+
+    // Handle profitability questions
+    if (lowerMessage.contains('profit') ||
+        lowerMessage.contains('margin') ||
+        lowerMessage.contains('revenue')) {
+      return '''
+${_constructPrompt(message, retrievedData)}
+
+Additional Context: The user is asking about profitability. When responding:
+1. Consider product costs vs. selling prices if available
+2. Suggest analyzing the sales data by product category
+3. Recommend reviewing the income statement for overall profitability
+4. Note that individual product profitability requires both cost and sales data
+''';
+    }
+
+    // Handle low stock questions
+    if (lowerMessage.contains('low stock') ||
+        lowerMessage.contains('out of stock') ||
+        lowerMessage.contains('restock') ||
+        lowerMessage.contains('reorder')) {
+      return '''
+${_constructPrompt(message, retrievedData)}
+
+Additional Context: The user is asking about low stock items. When responding:
+1. Clearly list products with quantities below 10 units
+2. Suggest reordering these items soon
+3. Mention which suppliers provide these products if that information is available
+4. Recommend setting up automated alerts for low stock items
+''';
+    }
+
+    // Handle warehouse-specific questions
+    if (_lastQueryClassification['warehouse_query']! > 0.7) {
+      return '''
+${_constructPrompt(message, retrievedData)}
+
+Additional Context: The user is asking about warehouses. When responding:
+1. Provide information about warehouse locations and capacities
+2. Mention the total value of inventory in each warehouse
+3. Highlight any warehouses that are near capacity or have significant value
+4. Suggest regular inventory audits for accurate stock levels
+''';
+    }
+
+    // Default to standard prompt
+    return _constructPrompt(message, retrievedData);
+  }
+
   /// Constructs a prompt with the retrieved data to send to the model
   String _constructPrompt(String userMessage, Map<String, dynamic> retrievedData) {
     String prompt = '''
 USER QUERY: $userMessage
+
+CONVERSATION CONTEXT:
+${_getRecentConversationSummary()}
 
 RETRIEVED DATA:
 ''';
@@ -358,11 +729,18 @@ RETRIEVED DATA:
       prompt += '\nPRODUCTS:\n';
 
       for (final product in retrievedData['products']) {
+        String stockStatus = "Normal";
+        if ((product['quantity'] as int) < 10 && (product['isActive'] as bool)) {
+          stockStatus = "LOW STOCK";
+        } else if ((product['quantity'] as int) <= 0) {
+          stockStatus = "OUT OF STOCK";
+        }
+
         prompt += '''
 - ID: ${product['id']}
   Name: ${product['name']}
   Category: ${product['category']}
-  Quantity: ${product['quantity']}
+  Quantity: ${product['quantity']} (Status: $stockStatus)
   Price: ${product['price']}
   Description: ${product['description'] ?? 'N/A'}
   isActive: ${product['isActive']}
@@ -426,6 +804,10 @@ RETRIEVED DATA:
   Creation Date: ${(order['createdAt'] as Timestamp).toDate().toString()}
 ''';
       }
+
+      if (retrievedData.containsKey('totalSales')) {
+        prompt += '\nTOTAL SALES VALUE: ${retrievedData['totalSales']}\n';
+      }
     }
 
     if (retrievedData.containsKey('purchaseOrders')) {
@@ -450,6 +832,8 @@ RETRIEVED DATA:
 - ID: ${product['id']}
   Name: ${product['name']}
   Current Quantity: ${product['quantity']}
+  Category: ${product['category']}
+  Price: ${product['price']}
 ''';
       }
     }
@@ -458,13 +842,81 @@ RETRIEVED DATA:
       prompt += '\nTOTAL INVENTORY VALUE: ${retrievedData['totalInventoryValue']}\n';
     }
 
-    prompt += '\nBased on the above data, please provide a concise and accurate answer to the user query.';
+    prompt += '\nBased on the above data, please provide a concise and accurate answer to the user query. Format currency values with appropriate symbols and use proper units for quantities. If data is missing to fully answer the query, acknowledge what information would be needed.';
 
     return prompt;
   }
 
-  /// Clears the conversation history
+  /// Gets a summary of recent conversation for context
+  String _getRecentConversationSummary() {
+    if (_history.length <= 2) return "This is a new conversation.";
+
+    // Get last few exchanges
+    final recentExchanges = _history.sublist(max(0, _history.length - 6));
+
+    // Convert to string summary
+    StringBuffer summary = StringBuffer();
+    for (var i = 0; i < recentExchanges.length; i++) {
+      final content = recentExchanges[i];
+      final role = i % 2 == 0 ? "User" : "Assistant";
+
+      // Extract text properly based on the actual structure
+      String text = "";
+      if (content.parts.isNotEmpty) {
+        final part = content.parts.first;
+        if (part is TextPart) {
+          text = part.text;
+        }
+      }
+
+      // Limit long responses
+      final displayText = text.length > 100
+          ? "${text.substring(0, 100)}..."
+          : text;
+
+      summary.writeln("$role: $displayText");
+    }
+
+    return summary.toString();
+  }
+
+  /// Generates a fallback response when API calls fail
+  String _generateFallbackResponse(String message) {
+    final lowerMessage = message.toLowerCase();
+
+    if (lowerMessage.contains('stock') || lowerMessage.contains('inventory')) {
+      return "I don't have specific information about the current inventory, but you can check the Products section for the most up-to-date stock levels. Would you like me to help with something else about inventory management?";
+    }
+
+    if (lowerMessage.contains('sales') || lowerMessage.contains('order')) {
+      return "I couldn't find detailed information about sales orders at the moment. You can view complete sales data in the Sales Orders section of the application. Is there anything else I can assist with?";
+    }
+
+    if (lowerMessage.contains('customer')) {
+      return "I don't have specific customer information available right now. You can find detailed customer data in the Customers section. Would you like help with another topic?";
+    }
+
+    if (lowerMessage.contains('supplier') || lowerMessage.contains('vendor')) {
+      return "I couldn't access specific supplier information at this time. You can view all supplier details in the Suppliers section. Is there something else I can help with?";
+    }
+
+    if (lowerMessage.contains('warehouse') || lowerMessage.contains('location')) {
+      return "I don't have detailed warehouse information available right now. You can find warehouse data including inventory levels in the Warehouses section. Would you like me to help with something else?";
+    }
+
+    return "I'm sorry, I couldn't find the information you're looking for. Please try asking in a different way or check the relevant section in the application directly. Is there something else I can assist with?";
+  }
+
+  /// Clears the conversation history and memory
   void clearHistory() {
     _history.clear();
+
+    // Reset conversation memory
+    for (final key in _conversationMemory.keys) {
+      _conversationMemory[key] = [];
+    }
+
+    // Reset classification
+    _lastQueryClassification = {};
   }
 }

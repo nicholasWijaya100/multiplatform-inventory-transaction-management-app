@@ -5,11 +5,13 @@ class ChatMessage {
   final String text;
   final bool isUser;
   final DateTime timestamp;
+  final String? messageType; // Optional field for special message types
 
   ChatMessage({
     required this.text,
     required this.isUser,
     DateTime? timestamp,
+    this.messageType,
   }) : timestamp = timestamp ?? DateTime.now();
 }
 
@@ -40,8 +42,14 @@ class ChatbotProvider extends ChangeNotifier {
       // Get response from chatbot
       final response = await _chatbotService.sendMessage(message);
 
+      // Parse response for special formatting if needed (could be enhanced further)
+      final processedResponse = _processResponse(response);
+
       // Add chatbot response
-      _messages.add(ChatMessage(text: response, isUser: false));
+      _messages.add(ChatMessage(
+        text: processedResponse,
+        isUser: false,
+      ));
     } catch (e) {
       // Add error message
       _messages.add(ChatMessage(
@@ -53,6 +61,13 @@ class ChatbotProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Process response to handle special formatting or message types
+  String _processResponse(String response) {
+    // This could be expanded to detect and format different response types
+    // For example, identifying lists, tables, or specific data types
+    return response;
   }
 
   /// Clear the chat history
