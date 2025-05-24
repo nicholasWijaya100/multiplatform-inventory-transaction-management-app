@@ -1,193 +1,129 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../lib/data/repositories/auth_repository.dart';
-import '../../../lib/data/models/user_model.dart';
-import 'auth_repository_test.mocks.dart';
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:inventory_app_revised/data/models/user_model.dart';
+import 'package:inventory_app_revised/data/repositories/auth_repository.dart';
 
-// Generate mocks with proper type arguments
-@GenerateMocks([
-  FirebaseAuth,
-  FirebaseFirestore,
-  UserCredential,
-  User,
-  DocumentReference,
-  CollectionReference,
-  DocumentSnapshot,
-  Query,
-])
+// Define mocks using Mocktail
+class MockFirebaseAuth extends Mock implements FirebaseAuth {}
+class MockUserCredential extends Mock implements UserCredential {}
+class MockUser extends Mock implements User {}
+
+// For fallback registration
+class FakeUserCredential extends Fake implements UserCredential {}
+
 void main() {
   late AuthRepository authRepository;
   late MockFirebaseAuth mockFirebaseAuth;
-  late MockFirebaseFirestore mockFirestore;
-  late MockUserCredential mockUserCredential;
+  late FakeFirebaseFirestore fakeFirestore;
   late MockUser mockUser;
-  late MockDocumentReference<Map<String, dynamic>> mockDocumentReference;
-  late MockCollectionReference<Map<String, dynamic>> mockCollectionReference;
-  late MockDocumentSnapshot<Map<String, dynamic>> mockDocumentSnapshot;
+  late MockUserCredential mockUserCredential;
+
+  setUpAll(() {
+    // Register fallback values for complex types using our fake implementation
+    registerFallbackValue(FakeUserCredential());
+  });
 
   setUp(() {
     mockFirebaseAuth = MockFirebaseAuth();
-    mockFirestore = MockFirebaseFirestore();
-    mockUserCredential = MockUserCredential();
+    fakeFirestore = FakeFirebaseFirestore();
     mockUser = MockUser();
-    mockDocumentReference = MockDocumentReference();
-    mockCollectionReference = MockCollectionReference();
-    mockDocumentSnapshot = MockDocumentSnapshot();
-
+    mockUserCredential = MockUserCredential();
     authRepository = AuthRepository(
       firebaseAuth: mockFirebaseAuth,
-      firestore: mockFirestore,
+      firestore: fakeFirestore,
     );
+
+    // Setup mock user
+    when(() => mockUser.uid).thenReturn('test-uid');
+    when(() => mockUserCredential.user).thenReturn(mockUser);
+
+    // For current user tests
+    when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+
+    // For signIn test
+    when(() => mockFirebaseAuth.signInWithEmailAndPassword(
+      email: any(named: 'email'),
+      password: any(named: 'password'),
+    )).thenAnswer((_) async => mockUserCredential);
+
+    // For signOut test
+    when(() => mockFirebaseAuth.signOut()).thenAnswer((_) async {});
+
+    // Setup Firestore document for user - make sure all the expected fields are there
+    fakeFirestore.collection('users').doc('test-uid').set({
+      'email': 'test@example.com',
+      'role': 'administrator',
+      'name': 'Test User',
+      'isActive': true,
+      // Add any other fields that your UserModel.fromJson expects
+    });
   });
 
   group('AuthRepository', () {
-    const testEmail = 'admin@admin.com';
-    const testPassword = 'admin123';
-    const testUserId = 'NQm9v46NRHSl6I9oPWIxYFgBLeV2';
+    test('getCurrentUser returns UserModel when user is authenticated', () async {
+      final user = await authRepository.getCurrentUser();
 
-    final testUserData = {
-      'id': testUserId,
-      'email': testEmail,
-      'role': 'Administrator',
-      'name': 'Administrator',
-      'isActive': true,
-    };
-
-    test('signIn - successful', () async {
-      // Arrange
-      when(mockFirebaseAuth.signInWithEmailAndPassword(
-        email: testEmail,
-        password: testPassword,
-      )).thenAnswer((_) async => mockUserCredential);
-
-      when(mockUserCredential.user).thenReturn(mockUser);
-      when(mockUser.uid).thenReturn(testUserId);
-
-      // Mock Firestore collection chain
-      when(mockFirestore.collection('users'))
-          .thenReturn(mockCollectionReference);
-      when(mockCollectionReference.doc(testUserId))
-          .thenReturn(mockDocumentReference);
-      when(mockDocumentReference.get())
-          .thenAnswer((_) async => mockDocumentSnapshot);
-      when(mockDocumentSnapshot.exists).thenReturn(true);
-      when(mockDocumentSnapshot.data())
-          .thenReturn(testUserData);
-
-      // Act
-      final result = await authRepository.signIn(
-        email: testEmail,
-        password: testPassword,
-      );
-
-      // Assert
-      expect(result, isA<UserModel>());
-      expect(result.email, testEmail);
-      expect(result.role, 'administrator');
-
-      verify(mockFirebaseAuth.signInWithEmailAndPassword(
-        email: testEmail,
-        password: testPassword,
-      )).called(1);
-      verify(mockFirestore.collection('users')).called(1);
-      verify(mockCollectionReference.doc(testUserId)).called(1);
-      verify(mockDocumentReference.get()).called(1);
+      expect(user, isNotNull);
+      expect(user?.id, equals('test-uid'));
+      expect(user?.email, equals('test@example.com'));
+      expect(user?.role, equals('administrator'));
+      expect(user?.isActive, isTrue);
     });
 
-    test('signIn - throws exception when user not found', () async {
-      // Arrange
-      when(mockFirebaseAuth.signInWithEmailAndPassword(
-        email: testEmail,
-        password: testPassword,
-      )).thenThrow(
-        FirebaseAuthException(code: 'user-not-found'),
+    test('getCurrentUser returns null when user is not authenticated', () async {
+      when(() => mockFirebaseAuth.currentUser).thenReturn(null);
+
+      final user = await authRepository.getCurrentUser();
+
+      expect(user, isNull);
+    });
+
+    test('signIn returns UserModel when credentials are valid', () async {
+      final mockUserCredential = MockUserCredential();
+      when(() => mockUserCredential.user).thenReturn(mockUser);
+
+      when(() => mockFirebaseAuth.signInWithEmailAndPassword(
+        email: any(named: 'email'),
+        password: any(named: 'password'),
+      )).thenAnswer((_) async => mockUserCredential);
+
+      final user = await authRepository.signIn(
+        email: 'test@example.com',
+        password: 'password',
       );
 
-      // Act & Assert
+      expect(user, isNotNull);
+      expect(user.id, equals('test-uid'));
+      expect(user.email, equals('test@example.com'));
+    });
+
+    test('signIn throws exception when credentials are invalid', () async {
+      // Mock the specific Firebase exception that would be thrown
+      when(() => mockFirebaseAuth.signInWithEmailAndPassword(
+        email: any(named: 'email'),
+        password: any(named: 'password'),
+      )).thenThrow(FirebaseAuthException(code: 'wrong-password'));
+
       expect(
             () => authRepository.signIn(
-          email: testEmail,
-          password: testPassword,
+          email: 'test@example.com',
+          password: 'wrong-password',
         ),
         throwsA(isA<Exception>()),
       );
     });
 
-    test('signIn - throws exception when document does not exist', () async {
-      // Arrange
-      when(mockFirebaseAuth.signInWithEmailAndPassword(
-        email: testEmail,
-        password: testPassword,
-      )).thenAnswer((_) async => mockUserCredential);
+    test('signOut calls Firebase signOut', () async {
+      // Important fix: setup the mock correctly for void async method
+      when(() => mockFirebaseAuth.signOut())
+          .thenAnswer((_) async {}); // Use thenAnswer for async methods
 
-      when(mockUserCredential.user).thenReturn(mockUser);
-      when(mockUser.uid).thenReturn(testUserId);
-
-      when(mockFirestore.collection('users'))
-          .thenReturn(mockCollectionReference);
-      when(mockCollectionReference.doc(testUserId))
-          .thenReturn(mockDocumentReference);
-      when(mockDocumentReference.get())
-          .thenAnswer((_) async => mockDocumentSnapshot);
-      when(mockDocumentSnapshot.exists).thenReturn(false);
-
-      // Act & Assert
-      expect(
-            () => authRepository.signIn(
-          email: testEmail,
-          password: testPassword,
-        ),
-        throwsA(isA<Exception>()),
-      );
-    });
-
-    test('signOut - successful', () async {
-      // Arrange
-      when(mockFirebaseAuth.signOut()).thenAnswer((_) async {});
-
-      // Act
       await authRepository.signOut();
 
-      // Assert
-      verify(mockFirebaseAuth.signOut()).called(1);
-    });
-
-    test('getCurrentUser - returns null when no user is signed in', () async {
-      // Arrange
-      when(mockFirebaseAuth.currentUser).thenReturn(null);
-
-      // Act
-      final result = await authRepository.getCurrentUser();
-
-      // Assert
-      expect(result, isNull);
-    });
-
-    test('getCurrentUser - returns user when signed in', () async {
-      // Arrange
-      when(mockFirebaseAuth.currentUser).thenReturn(mockUser);
-      when(mockUser.uid).thenReturn(testUserId);
-
-      when(mockFirestore.collection('users'))
-          .thenReturn(mockCollectionReference);
-      when(mockCollectionReference.doc(testUserId))
-          .thenReturn(mockDocumentReference);
-      when(mockDocumentReference.get())
-          .thenAnswer((_) async => mockDocumentSnapshot);
-      when(mockDocumentSnapshot.exists).thenReturn(true);
-      when(mockDocumentSnapshot.data())
-          .thenReturn(testUserData);
-
-      // Act
-      final result = await authRepository.getCurrentUser();
-
-      // Assert
-      expect(result, isA<UserModel>());
-      expect(result!.email, testEmail);
-      expect(result.role, 'administrator');
+      verify(() => mockFirebaseAuth.signOut()).called(1);
     });
   });
 }

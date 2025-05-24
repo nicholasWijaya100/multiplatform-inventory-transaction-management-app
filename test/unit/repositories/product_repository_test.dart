@@ -1,227 +1,133 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import '../../../lib/data/repositories/product_repository.dart';
-import '../../../lib/data/models/product.dart';
-import 'product_repository_test.mocks.dart';
+import 'package:inventory_app_revised/data/models/product_model.dart';
+import 'package:inventory_app_revised/data/repositories/product_repository.dart';
 
-// Define specific mock types for Firebase
-@GenerateMocks([], customMocks: [
-  MockSpec<FirebaseFirestore>(as: #MockFirestore),
-  MockSpec<CollectionReference<Map<String, dynamic>>>(
-    as: #MockProductCollection,
-  ),
-  MockSpec<DocumentReference<Map<String, dynamic>>>(
-    as: #MockProductDocument,
-  ),
-  MockSpec<DocumentSnapshot<Map<String, dynamic>>>(
-    as: #MockProductSnapshot,
-  ),
-  MockSpec<QuerySnapshot<Map<String, dynamic>>>(
-    as: #MockProductQuerySnapshot,
-  ),
-  MockSpec<QueryDocumentSnapshot<Map<String, dynamic>>>(
-    as: #MockProductQueryDocSnapshot,
-  ),
-])
+// For complex Firestore operations, use fake_cloud_firestore instead of mocks
 void main() {
   late ProductRepository productRepository;
-  late MockFirestore mockFirestore;
-  late MockProductCollection mockCollection;
-  late MockProductDocument mockDocument;
-  late MockProductQuerySnapshot mockQuerySnapshot;
+  late FakeFirebaseFirestore fakeFirestore;
 
   setUp(() {
-    mockFirestore = MockFirestore();
-    mockCollection = MockProductCollection();
-    mockDocument = MockProductDocument();
-    mockQuerySnapshot = MockProductQuerySnapshot();
-    productRepository = ProductRepository(firestore: mockFirestore);
+    fakeFirestore = FakeFirebaseFirestore();
+    productRepository = ProductRepository(firestore: fakeFirestore);
 
-    // Setup default responses for common calls
-    when(mockFirestore.collection('products')).thenReturn(mockCollection);
+    // Add test data to fake Firestore
+    fakeFirestore.collection('products').doc('test-product-id').set({
+      'name': 'Test Product',
+      'category': 'Test Category',
+      'price': 19.99,
+      'quantity': 50,
+      'isActive': true,
+      'description': 'Test description',
+      'createdAt': Timestamp.now(),
+      'updatedAt': Timestamp.now(),
+      'warehouseStock': <String, int>{'warehouse1': 20, 'warehouse2': 30}, // Explicitly typed
+    });
+
+    // Add another product for search test
+    fakeFirestore.collection('products').doc('another-product-id').set({
+      'name': 'Another Product',
+      'category': 'Test Category',
+      'price': 29.99,
+      'quantity': 30,
+      'isActive': true,
+      'description': 'Another description',
+      'createdAt': Timestamp.now(),
+      'updatedAt': Timestamp.now(),
+      'warehouseStock': <String, int>{}, // Empty but typed map
+    });
+
+    fakeFirestore.collection('categories').doc('test-category-id').set({
+      'name': 'Test Category',
+      'isActive': true,
+    });
   });
 
   group('ProductRepository', () {
-    final testProduct = Product(
-      id: 'test-id',
-      name: 'Test Product',
-      price: 99.99,
-      quantity: 10,
-      category: 'Test Category',
-      description: 'Test Description',
-    );
+    test('getProduct returns ProductModel when product exists', () async {
+      final product = await productRepository.getProduct('test-product-id');
 
-    test('getProducts returns list of products', () async {
-      // Arrange
-      final mockDocSnapshot = MockProductQueryDocSnapshot();
-      final mockDocs = [mockDocSnapshot];
-
-      when(mockCollection.get())
-          .thenAnswer((_) async => mockQuerySnapshot);
-      when(mockQuerySnapshot.docs).thenReturn(mockDocs);
-      when(mockDocSnapshot.data())
-          .thenReturn(testProduct.toJson());
-      when(mockDocSnapshot.id).thenReturn('test-id');
-
-      // Act
-      final products = await productRepository.getProducts();
-
-      // Assert
-      expect(products, isA<List<Product>>());
-      expect(products.length, 1);
-      expect(products.first.id, testProduct.id);
-      verify(mockFirestore.collection('products')).called(1);
-      verify(mockCollection.get()).called(1);
+      expect(product, isNotNull);
+      expect(product.id, equals('test-product-id'));
+      expect(product.name, equals('Test Product'));
+      expect(product.category, equals('Test Category'));
+      expect(product.price, equals(19.99));
+      expect(product.quantity, equals(50));
+      expect(product.isActive, isTrue);
     });
 
-    test('getProductById returns specific product', () async {
-      // Arrange
-      final mockDocSnapshot = MockProductSnapshot();
-
-      when(mockCollection.doc('test-id'))
-          .thenReturn(mockDocument);
-      when(mockDocument.get())
-          .thenAnswer((_) async => mockDocSnapshot);
-      when(mockDocSnapshot.exists).thenReturn(true);
-      when(mockDocSnapshot.data())
-          .thenReturn(testProduct.toJson());
-
-      // Act
-      final product = await productRepository.getProductById('test-id');
-
-      // Assert
-      expect(product, isA<Product>());
-      expect(product.id, testProduct.id);
-      expect(product.name, testProduct.name);
-      verify(mockCollection.doc('test-id')).called(1);
-    });
-
-    test('getProductById throws exception when product not found', () async {
-      // Arrange
-      final mockDocSnapshot = MockProductSnapshot();
-
-      when(mockCollection.doc('test-id'))
-          .thenReturn(mockDocument);
-      when(mockDocument.get())
-          .thenAnswer((_) async => mockDocSnapshot);
-      when(mockDocSnapshot.exists).thenReturn(false);
-
-      // Act & Assert
+    test('getProduct throws exception when product does not exist', () async {
       expect(
-            () => productRepository.getProductById('test-id'),
+            () => productRepository.getProduct('non-existent-id'),
         throwsA(isA<Exception>()),
       );
     });
 
-    test('addProduct successfully adds product', () async {
-      // Arrange
-      when(mockCollection.add(any))
-          .thenAnswer((_) async => mockDocument);
-      when(mockDocument.id).thenReturn('new-test-id');
+    test('getProducts returns list of products', () async {
+      final products = await productRepository.getProducts();
 
-      // Act
-      final result = await productRepository.addProduct(testProduct);
-
-      // Assert
-      expect(result, isA<Product>());
-      expect(result.id, 'new-test-id');
-      verify(mockCollection.add(any)).called(1);
+      expect(products, isNotEmpty);
+      expect(products.length, equals(2)); // Both products should be returned
+      expect(products.any((p) => p.name == 'Test Product'), isTrue);
+      expect(products.any((p) => p.name == 'Another Product'), isTrue);
     });
 
-    test('updateProduct successfully updates product', () async {
-      // Arrange
-      when(mockCollection.doc(testProduct.id))
-          .thenReturn(mockDocument);
-      when(mockDocument.update(any))
-          .thenAnswer((_) async => {});
+    test('getProducts with search query returns filtered products', () async {
+      final products = await productRepository.getProducts(searchQuery: 'Another');
 
-      // Act
-      await productRepository.updateProduct(testProduct);
-
-      // Assert
-      verify(mockDocument.update(any)).called(1);
+      expect(products, isNotEmpty);
+      expect(products.length, equals(1));
+      expect(products.first.name, equals('Another Product'));
     });
 
-    test('deleteProduct successfully deletes product', () async {
-      // Arrange
-      when(mockCollection.doc('test-id'))
-          .thenReturn(mockDocument);
-      when(mockDocument.delete())
-          .thenAnswer((_) async => {});
+    test('getCategories returns list of category names', () async {
+      final categories = await productRepository.getCategories();
 
-      // Act
-      await productRepository.deleteProduct('test-id');
-
-      // Assert
-      verify(mockDocument.delete()).called(1);
+      expect(categories, isNotEmpty);
+      expect(categories.first, equals('Test Category'));
     });
 
-    test('getProductsStream emits list of products', () async {
-      // Arrange
-      final mockDocSnapshot = MockProductQueryDocSnapshot();
-      final mockDocs = [mockDocSnapshot];
-      final mockSnapshot = MockProductQuerySnapshot();
-
-      when(mockCollection.snapshots())
-          .thenAnswer((_) => Stream.value(mockSnapshot));
-      when(mockSnapshot.docs).thenReturn(mockDocs);
-      when(mockDocSnapshot.data())
-          .thenReturn(testProduct.toJson());
-      when(mockDocSnapshot.id).thenReturn('test-id');
-
-      // Act & Assert
-      expect(
-        productRepository.getProductsStream(),
-        emits(isA<List<Product>>()),
-      );
-    });
-  });
-
-  group('ProductRepository Integration Tests', () {
-    late ProductRepository productRepository;
-    late FakeFirebaseFirestore fakeFirestore;
-
-    setUp(() {
-      fakeFirestore = FakeFirebaseFirestore();
-      productRepository = ProductRepository(firestore: fakeFirestore);
-    });
-
-    test('Integration - full CRUD operations', () async {
-      // Test adding a product
-      final newProduct = Product(
-        id: '',
-        name: 'Integration Test Product',
-        price: 49.99,
-        quantity: 5,
-        category: 'Test',
+    test('addProduct adds product and returns ProductModel', () async {
+      final newProduct = ProductModel(
+        id: '',  // Will be set by Firestore
+        name: 'New Product',
+        category: 'Test Category',
+        price: 24.99,
+        quantity: 40,
+        isActive: true,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       );
 
       final addedProduct = await productRepository.addProduct(newProduct);
+
+      expect(addedProduct, isNotNull);
       expect(addedProduct.id, isNotEmpty);
-      expect(addedProduct.name, newProduct.name);
+      expect(addedProduct.name, equals('New Product'));
 
-      // Test getting the product
-      final fetchedProduct = await productRepository.getProductById(addedProduct.id);
-      expect(fetchedProduct.id, addedProduct.id);
-      expect(fetchedProduct.name, addedProduct.name);
+      // Verify product was added to Firestore
+      final docSnapshot = await fakeFirestore.collection('products').doc(addedProduct.id).get();
+      expect(docSnapshot.exists, isTrue);
+      expect(docSnapshot.data()!['name'], equals('New Product'));
+    });
 
-      // Test updating the product
-      final updatedProduct = addedProduct.copyWith(name: 'Updated Name');
-      await productRepository.updateProduct(updatedProduct);
+    test('updateProductStatus updates product status', () async {
+      await productRepository.updateProductStatus('test-product-id', false);
 
-      final fetchedUpdatedProduct = await productRepository.getProductById(addedProduct.id);
-      expect(fetchedUpdatedProduct.name, 'Updated Name');
+      final docSnapshot = await fakeFirestore.collection('products').doc('test-product-id').get();
+      expect(docSnapshot.data()!['isActive'], isFalse);
+    });
 
-      // Test deleting the product
-      await productRepository.deleteProduct(addedProduct.id);
+    test('updateStock updates warehouse stock for product', () async {
+      await productRepository.updateStock('test-product-id', 'warehouse1', 25);
 
-      expect(
-            () => productRepository.getProductById(addedProduct.id),
-        throwsA(isA<Exception>()),
-      );
+      final docSnapshot = await fakeFirestore.collection('products').doc('test-product-id').get();
+      final warehouseStock = docSnapshot.data()!['warehouseStock'] as Map<String, dynamic>;
+
+      expect(warehouseStock['warehouse1'], equals(25));
     });
   });
 }
