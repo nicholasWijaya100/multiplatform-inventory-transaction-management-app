@@ -270,19 +270,19 @@ class SideMenu extends StatelessWidget {
         ),
 
         // Common sections available to all users
-        const Divider(height: 32),
-        _MenuItem(
-          icon: Icons.settings_outlined,
-          title: 'Settings',
-          isSelected: navigationController.currentRoute == '/settings',
-          onTap: () => navigationController.navigateTo('/settings'),
-        ),
-        _MenuItem(
-          icon: Icons.help_outline,
-          title: 'Help & Support',
-          isSelected: navigationController.currentRoute == '/help',
-          onTap: () => navigationController.navigateTo('/help'),
-        ),
+        // const Divider(height: 32),
+        // _MenuItem(
+        //   icon: Icons.settings_outlined,
+        //   title: 'Settings',
+        //   isSelected: navigationController.currentRoute == '/settings',
+        //   onTap: () => navigationController.navigateTo('/settings'),
+        // ),
+        // _MenuItem(
+        //   icon: Icons.help_outline,
+        //   title: 'Help & Support',
+        //   isSelected: navigationController.currentRoute == '/help',
+        //   onTap: () => navigationController.navigateTo('/help'),
+        // ),
       ],
     );
   }

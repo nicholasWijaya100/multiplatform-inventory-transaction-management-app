@@ -79,7 +79,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                     icon: const Icon(Icons.add),
                     label: const Text('Add Product'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[900],
+                      backgroundColor: Colors.blue[100],
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 12,
@@ -168,7 +168,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
       floatingActionButton: isSmallScreen && isAdmin
           ? FloatingActionButton(
         onPressed: _showAddProductDialog,
-        backgroundColor: Colors.blue[900],
+        backgroundColor: Colors.blue[100],
         child: const Icon(Icons.add),
       )
           : null,

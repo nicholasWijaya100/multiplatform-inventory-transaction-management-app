@@ -72,7 +72,7 @@ class _SupplierManagementScreenState extends State<SupplierManagementScreen> {
                     icon: const Icon(Icons.add),
                     label: const Text('Add Supplier'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[900],
+                      backgroundColor: Colors.blue[100],
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 12,
@@ -152,7 +152,7 @@ class _SupplierManagementScreenState extends State<SupplierManagementScreen> {
       floatingActionButton: isSmallScreen
           ? FloatingActionButton(
         onPressed: _showAddSupplierDialog,
-        backgroundColor: Colors.blue[900],
+        backgroundColor: Colors.blue[100],
         child: const Icon(Icons.add),
       )
           : null,

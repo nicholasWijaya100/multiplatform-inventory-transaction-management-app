@@ -164,7 +164,7 @@ class _IncomeStatementScreenState extends State<IncomeStatementScreen> {
                           icon: const Icon(Icons.analytics_outlined),
                           label: const Text('Generate Report'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue[900],
+                            backgroundColor: Colors.blue[100],
                             padding: const EdgeInsets.symmetric(
                               horizontal: 24,
                               vertical: 12,
@@ -182,7 +182,7 @@ class _IncomeStatementScreenState extends State<IncomeStatementScreen> {
                             icon: const Icon(Icons.analytics_outlined),
                             label: const Text('Generate Report'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue[900],
+                              backgroundColor: Colors.blue[100],
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 24,
                                 vertical: 12,

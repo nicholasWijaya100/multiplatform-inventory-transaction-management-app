@@ -106,7 +106,7 @@ class _ReceiveOrderDialogState extends State<ReceiveOrderDialog> {
                 Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[900],
+                backgroundColor: Colors.blue[100],
               ),
               child: const Text('Receive Order'),
             );

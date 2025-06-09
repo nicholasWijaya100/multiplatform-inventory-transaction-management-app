@@ -66,7 +66,7 @@ class _PurchaseInvoiceManagementScreenState extends State<PurchaseInvoiceManagem
                     icon: const Icon(Icons.add),
                     label: const Text('Create Invoice'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[900],
+                      backgroundColor: Colors.blue[100],
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 12,
@@ -155,7 +155,7 @@ class _PurchaseInvoiceManagementScreenState extends State<PurchaseInvoiceManagem
       floatingActionButton: isSmallScreen
           ? FloatingActionButton(
         onPressed: _showAddPurchaseInvoiceDialog,
-        backgroundColor: Colors.blue[900],
+        backgroundColor: Colors.blue[100],
         child: const Icon(Icons.add),
       )
           : null,

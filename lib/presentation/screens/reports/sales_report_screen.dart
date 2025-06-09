@@ -92,7 +92,7 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
                       icon: const Icon(Icons.refresh),
                       label: const Text('Refresh Report'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[900],
+                        backgroundColor: Colors.blue[100],
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
                           vertical: 12,

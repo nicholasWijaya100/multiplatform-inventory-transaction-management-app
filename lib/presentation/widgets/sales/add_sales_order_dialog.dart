@@ -390,7 +390,7 @@ class _AddSalesOrderDialogState extends State<AddSalesOrderDialog> {
                       ElevatedButton(
                         onPressed: _handleSubmit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue[900],
+                          backgroundColor: Colors.blue[100],
                         ),
                         child: const Text('Create Order'),
                       ),
@@ -655,7 +655,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
                       ElevatedButton(
                         onPressed: _handleSubmit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue[900],
+                          backgroundColor: Colors.blue[100],
                         ),
                         child: const Text('Add Item'),
                       ),

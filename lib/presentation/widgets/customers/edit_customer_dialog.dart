@@ -221,7 +221,7 @@ class _EditCustomerDialogState extends State<EditCustomerDialog> {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: Colors.blue[900],
+                            color: Colors.blue[100],
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -273,7 +273,7 @@ class _EditCustomerDialogState extends State<EditCustomerDialog> {
                     ElevatedButton(
                       onPressed: _handleSubmit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[900],
+                        backgroundColor: Colors.blue[100],
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
                           vertical: 12,

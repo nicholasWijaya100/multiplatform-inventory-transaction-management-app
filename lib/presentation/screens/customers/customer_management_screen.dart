@@ -72,7 +72,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
                     icon: const Icon(Icons.add),
                     label: const Text('Add Customer'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[900],
+                      backgroundColor: Colors.blue[100],
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 12,
@@ -150,7 +150,7 @@ class _CustomerManagementScreenState extends State<CustomerManagementScreen> {
       floatingActionButton: isSmallScreen
           ? FloatingActionButton(
         onPressed: _showAddCustomerDialog,
-        backgroundColor: Colors.blue[900],
+        backgroundColor: Colors.blue[100],
         child: const Icon(Icons.add),
       )
           : null,

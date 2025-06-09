@@ -93,37 +93,37 @@ class _HomeScreenState extends State<HomeScreen> {
         return Row(
           children: [
             // Notifications
-            Stack(
-              children: [
-                IconButton(
-                  icon: const Icon(
-                    Icons.notifications_outlined,
-                    color: Colors.black87,
-                  ),
-                  onPressed: () {
-                    // TODO: Implement notifications
-                  },
-                ),
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Text(
-                      '3',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            // Stack(
+            //   children: [
+            //     IconButton(
+            //       icon: const Icon(
+            //         Icons.notifications_outlined,
+            //         color: Colors.black87,
+            //       ),
+            //       onPressed: () {
+            //         // TODO: Implement notifications
+            //       },
+            //     ),
+            //     Positioned(
+            //       right: 8,
+            //       top: 8,
+            //       child: Container(
+            //         padding: const EdgeInsets.all(4),
+            //         decoration: const BoxDecoration(
+            //           color: Colors.red,
+            //           shape: BoxShape.circle,
+            //         ),
+            //         child: const Text(
+            //           '3',
+            //           style: TextStyle(
+            //             color: Colors.white,
+            //             fontSize: 10,
+            //           ),
+            //         ),
+            //       ),
+            //     ),
+            //   ],
+            // ),
             const SizedBox(width: 8),
 
             // User Profile
@@ -134,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: Colors.blue[900],
+                      backgroundColor: Colors.blue[100],
                       radius: 16,
                       child: Text(
                         user.name?[0].toUpperCase() ?? 'U',

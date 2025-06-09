@@ -76,7 +76,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                     icon: const Icon(Icons.add),
                     label: const Text('Add Category'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[900],
+                      backgroundColor: Colors.blue[100],
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 12,
@@ -154,7 +154,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
       floatingActionButton: isSmallScreen && isAdmin
           ? FloatingActionButton(
         onPressed: _showAddCategoryDialog,
-        backgroundColor: Colors.blue[900],
+        backgroundColor: Colors.blue[100],
         child: const Icon(Icons.add),
       )
           : null,

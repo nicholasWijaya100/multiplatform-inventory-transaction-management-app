@@ -66,7 +66,7 @@ class _PurchaseOrderManagementScreenState extends State<PurchaseOrderManagementS
                     icon: const Icon(Icons.add),
                     label: const Text('Create Order'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[900],
+                      backgroundColor: Colors.blue[100],
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 12,
@@ -151,7 +151,7 @@ class _PurchaseOrderManagementScreenState extends State<PurchaseOrderManagementS
       floatingActionButton: isSmallScreen
           ? FloatingActionButton(
         onPressed: _showAddPurchaseOrderDialog,
-        backgroundColor: Colors.blue[900],
+        backgroundColor: Colors.blue[100],
         child: const Icon(Icons.add),
       )
           : null,

@@ -365,7 +365,7 @@ class PurchaseOrderDetailsDialog extends StatelessWidget {
         icon: const Icon(Icons.update),
         label: const Text('Update Status'),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue[900],
+          backgroundColor: Colors.blue[100],
         ),
       ),
       itemBuilder: (context) {

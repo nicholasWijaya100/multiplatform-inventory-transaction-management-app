@@ -134,7 +134,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Row(
             children: [
               CircleAvatar(
-                backgroundColor: Colors.blue[900],
+                backgroundColor: Colors.blue[100],
                 radius: isSmallScreen ? 24 : 32,
                 child: Text(
                   user.name?[0].toUpperCase() ?? 'U',

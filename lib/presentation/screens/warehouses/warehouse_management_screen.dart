@@ -112,7 +112,7 @@ class _WarehouseManagementScreenState extends State<WarehouseManagementScreen> {
                     icon: const Icon(Icons.add),
                     label: const Text('Add Warehouse'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[900],
+                      backgroundColor: Colors.blue[100],
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 12,
@@ -236,7 +236,7 @@ class _WarehouseManagementScreenState extends State<WarehouseManagementScreen> {
       floatingActionButton: isSmallScreen
           ? FloatingActionButton(
         onPressed: _showAddWarehouseDialog,
-        backgroundColor: Colors.blue[900],
+        backgroundColor: Colors.blue[100],
         child: const Icon(Icons.add),
       )
           : null,

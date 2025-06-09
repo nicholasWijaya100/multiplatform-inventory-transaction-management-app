@@ -490,7 +490,7 @@ class _AddPurchaseInvoiceDialogState extends State<AddPurchaseInvoiceDialog> {
                       ElevatedButton(
                         onPressed: _handleSubmit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue[900],
+                          backgroundColor: Colors.blue[100],
                         ),
                         child: const Text('Create Invoice'),
                       ),

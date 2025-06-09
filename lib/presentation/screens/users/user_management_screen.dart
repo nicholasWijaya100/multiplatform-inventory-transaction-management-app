@@ -83,7 +83,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     icon: const Icon(Icons.add),
                     label: const Text('Add User'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[900],
+                      backgroundColor: Colors.blue[100],
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 12,
@@ -161,7 +161,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       floatingActionButton: isSmallScreen
           ? FloatingActionButton(
         onPressed: _showAddUserDialog,
-        backgroundColor: Colors.blue[900],
+        backgroundColor: Colors.blue[100],
         child: const Icon(Icons.add),
       )
           : null,

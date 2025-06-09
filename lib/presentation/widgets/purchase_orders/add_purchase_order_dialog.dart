@@ -407,7 +407,7 @@ class _AddPurchaseOrderDialogState extends State<AddPurchaseOrderDialog> {
                           child: ElevatedButton(
                             onPressed: _handleSubmit,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue[900],
+                              backgroundColor: Colors.blue[100],
                             ),
                             child: const Text('Create Order'),
                           ),
@@ -427,7 +427,7 @@ class _AddPurchaseOrderDialogState extends State<AddPurchaseOrderDialog> {
                         ElevatedButton(
                           onPressed: _handleSubmit,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue[900],
+                            backgroundColor: Colors.blue[100],
                           ),
                           child: const Text('Create Order'),
                         ),
@@ -707,7 +707,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
                     ElevatedButton(
                       onPressed: _handleSubmit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[900],
+                        backgroundColor: Colors.blue[100],
                       ),
                       child: const Text('Add Item'),
                     ),
@@ -723,7 +723,7 @@ class _AddItemDialogState extends State<_AddItemDialog> {
                         ElevatedButton(
                           onPressed: _handleSubmit,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue[900],
+                            backgroundColor: Colors.blue[100],
                           ),
                           child: const Text('Add Item'),
                         ),

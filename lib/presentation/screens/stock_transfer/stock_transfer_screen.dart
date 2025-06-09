@@ -551,7 +551,7 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
             ? _handleTransfer
             : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue[900],
+          backgroundColor: Colors.blue[100],
           padding: const EdgeInsets.symmetric(
             vertical: 16,
           ),

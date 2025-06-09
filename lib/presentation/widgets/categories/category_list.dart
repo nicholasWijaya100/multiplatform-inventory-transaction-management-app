@@ -132,7 +132,7 @@ class CategoryList extends StatelessWidget {
                               children: [
                                 CircleAvatar(
                                   backgroundColor: category.isActive
-                                      ? Colors.blue[900]
+                                      ? Colors.blue[100]
                                       : Colors.grey,
                                   radius: 16,
                                   child: Text(
