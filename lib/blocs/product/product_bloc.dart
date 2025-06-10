@@ -82,6 +82,17 @@ class UpdateProductStock extends ProductEvent {
   List<Object?> get props => [productId, warehouseId, quantity];
 }
 
+class AdjustProductStock extends ProductEvent {
+  final String productId;
+  final String warehouseId;
+  final int quantityChange; // Positive to add, negative to subtract
+
+  const AdjustProductStock(this.productId, this.warehouseId, this.quantityChange);
+
+  @override
+  List<Object?> get props => [productId, warehouseId, quantityChange];
+}
+
 class TransferStock extends ProductEvent {
   final String productId;
   final String sourceWarehouseId;
@@ -216,6 +227,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     on<UpdateProductStatus>(_onUpdateProductStatus);
     on<UpdateProductStock>(_onUpdateProductStock);
     on<TransferStock>(_onTransferStock);
+    on<AdjustProductStock>(_onAdjustProductStock);
   }
 
   Future<void> _onLoadProducts(
@@ -261,6 +273,52 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       ));
     } catch (e) {
       emit(ProductError(e.toString()));
+    }
+  }
+
+  Future<void> _onAdjustProductStock(
+      AdjustProductStock event,
+      Emitter<ProductState> emit,
+      ) async {
+    emit(ProductLoading());
+    try {
+      // Get current stock first
+      final product = await _productRepository.getProduct(event.productId);
+      final currentStock = product.warehouseStock[event.warehouseId] ?? 0;
+      final newStock = currentStock + event.quantityChange;
+
+      // Ensure stock doesn't go negative
+      if (newStock < 0) {
+        throw Exception('Insufficient stock. Current: $currentStock, Requested change: ${event.quantityChange}');
+      }
+
+      // Update stock with the new value
+      await _productRepository.updateStock(
+        event.productId,
+        event.warehouseId,
+        newStock,
+      );
+
+      // Also update the total quantity
+      final allWarehouseStock = {...product.warehouseStock};
+      allWarehouseStock[event.warehouseId] = newStock;
+
+      final totalQuantity = allWarehouseStock.values.fold(0, (sum, stock) => sum + stock);
+
+      await _productRepository.updateProduct(
+        product.copyWith(
+          quantity: totalQuantity,
+          warehouseStock: allWarehouseStock,
+        ),
+      );
+
+      // Update warehouse totals
+      _warehouseBloc.add(LoadWarehouses());
+
+      add(LoadProducts());
+    } catch (e) {
+      emit(ProductError(e.toString()));
+      add(LoadProducts());
     }
   }
 
