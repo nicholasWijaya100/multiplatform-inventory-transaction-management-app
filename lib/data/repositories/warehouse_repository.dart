@@ -66,6 +66,45 @@ class WarehouseRepository {
     }
   }
 
+  Future<WarehouseModel> getWarehouse(String warehouseId) async {
+    try {
+      final doc = await _firestore.collection('warehouses').doc(warehouseId).get();
+
+      if (!doc.exists) {
+        throw Exception('Warehouse not found');
+      }
+
+      final data = doc.data()!;
+      data['id'] = doc.id;
+
+      // Calculate totals for this warehouse
+      final productSnapshot = await _firestore.collection('products').get();
+      final products = productSnapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return ProductModel.fromJson(data);
+      }).toList();
+
+      int totalProducts = 0;
+      double totalValue = 0;
+
+      for (final product in products) {
+        final stockInWarehouse = product.warehouseStock[warehouseId] ?? 0;
+        if (stockInWarehouse > 0) {
+          totalProducts += stockInWarehouse;
+          totalValue += stockInWarehouse * product.price;
+        }
+      }
+
+      data['totalProducts'] = totalProducts;
+      data['totalValue'] = totalValue;
+
+      return WarehouseModel.fromJson(data);
+    } catch (e) {
+      throw Exception('Failed to fetch warehouse: ${e.toString()}');
+    }
+  }
+
   Future<WarehouseModel> addWarehouse(WarehouseModel warehouse) async {
     try {
       final docRef = await _firestore.collection('warehouses').add({

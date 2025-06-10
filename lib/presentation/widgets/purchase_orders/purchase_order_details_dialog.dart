@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:inventory_app_revised/presentation/widgets/purchase_orders/receive_order_dialog.dart';
 import '../../../blocs/purchase/purchase_bloc.dart';
 import '../../../data/models/purchase_order_model.dart';
 import '../../../utils/formatter.dart';
+import 'confirm_order_dialog.dart';
 
 class PurchaseOrderDetailsDialog extends StatelessWidget {
   final PurchaseOrderModel order;
@@ -365,7 +365,7 @@ class PurchaseOrderDetailsDialog extends StatelessWidget {
         icon: const Icon(Icons.update),
         label: const Text('Update Status'),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue[100],
+          backgroundColor: Colors.blue.shade100,
         ),
       ),
       itemBuilder: (context) {
@@ -378,11 +378,11 @@ class PurchaseOrderDetailsDialog extends StatelessWidget {
         }).toList();
       },
       onSelected: (newStatus) {
-        // Show warehouse selection dialog for receiving goods
-        if (order.status == 'confirmed' && newStatus == 'received') {
+        // Show warehouse selection dialog for confirming order
+        if (order.status == 'pending' && newStatus == 'confirmed') {
           showDialog(
             context: context,
-            builder: (context) => ReceiveOrderDialog(order: order),
+            builder: (context) => ConfirmOrderDialog(order: order),
           );
         } else {
           context.read<PurchaseBloc>().add(
@@ -420,9 +420,9 @@ class PurchaseOrderDetailsDialog extends StatelessWidget {
       case 'pending':
         return ['confirmed', 'cancelled'];
       case 'confirmed':
-        return ['received', 'cancelled'];
+        return ['cancelled']; // Can only be cancelled now, received happens automatically
       case 'received':
-        return ['completed', 'cancelled'];
+        return ['completed'];
       case 'completed':
       case 'cancelled':
         return [];

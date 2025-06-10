@@ -14,6 +14,7 @@ import 'blocs/purchase_invoice/purchase_invoice_bloc.dart';
 import 'blocs/supplier/supplier_bloc.dart';
 import 'blocs/users/users_bloc.dart';
 import 'blocs/warehouse/warehouse_bloc.dart';
+import 'blocs/warehouse_documents/warehouse_document_bloc.dart';
 import 'chatbot_provider.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/category_repository.dart';
@@ -104,6 +105,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => locator<PurchaseInvoiceBloc>(),
+        ),
+        BlocProvider(
+          create: (context) => locator<WarehouseDocumentBloc>(),
         ),
       ],
       child: ChangeNotifierProvider(

@@ -15,6 +15,7 @@ class ProductModel with _$ProductModel {
     required double price,
     required int quantity,
     String? description,
+    String? sku, // ADD THIS LINE - SKU field
     required bool isActive,
     @TimestampConverter() required DateTime createdAt,
     @TimestampConverter() required DateTime updatedAt,
