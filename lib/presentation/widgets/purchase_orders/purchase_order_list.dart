@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:inventory_app_revised/presentation/widgets/purchase_orders/purchase_order_details_dialog.dart';
-import 'package:inventory_app_revised/presentation/widgets/purchase_orders/receive_order_dialog.dart';
+import 'package:inventory_app_revised/presentation/widgets/purchase_orders/confirm_order_dialog.dart';
 import '../../../data/models/purchase_order_model.dart';
 import '../../../utils/formatter.dart';
 import 'purchase_order_card.dart';
@@ -76,13 +76,13 @@ class PurchaseOrderList extends StatelessWidget {
               DataColumn(
                 label: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Text('Status'),
+                  child: Text('Created'),
                 ),
               ),
               DataColumn(
                 label: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Text('Created'),
+                  child: Text('Status'),
                 ),
               ),
               DataColumn(
@@ -96,36 +96,96 @@ class PurchaseOrderList extends StatelessWidget {
               return DataRow(
                 cells: [
                   DataCell(
-                    Text(
-                      '#${order.id}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
+                    InkWell(
+                      onTap: () => onViewDetails(order),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Text(
+                          '#${order.id}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                   DataCell(
-                    Text(order.supplierName),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            order.supplierName,
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'ID: ${order.supplierId}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   DataCell(
-                    Text(order.items.length.toString()),
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue[50],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${order.items.length}',
+                          style: TextStyle(
+                            color: Colors.blue[700],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                   DataCell(
                     Text(
                       Formatters.formatCurrency(order.totalAmount),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
-                  ),
-                  DataCell(
-                    _buildStatusBadge(context, order.status),
                   ),
                   DataCell(
                     Text(
                       Formatters.formatDate(order.createdAt),
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ),
+                  DataCell(
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(order.status).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: _getStatusColor(order.status).withOpacity(0.5),
+                        ),
+                      ),
+                      child: Text(
+                        order.status[0].toUpperCase() + order.status.substring(1),
+                        style: TextStyle(
+                          color: _getStatusColor(order.status),
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ),
@@ -151,21 +211,23 @@ class PurchaseOrderList extends StatelessWidget {
                               return _getNextPossibleStatuses(order.status)
                                   .map((status) => PopupMenuItem(
                                 value: status,
-                                child: Text(status),
+                                child: Text(
+                                  status[0].toUpperCase() + status.substring(1),
+                                ),
                               ))
                                   .toList();
                             },
                             onSelected: (newStatus) {
-                              if (order.status == 'confirmed' && newStatus == 'received') {
+                              // Show warehouse selection dialog for confirming order
+                              if (order.status == 'pending' && newStatus == 'confirmed') {
                                 showDialog(
                                   context: context,
-                                  builder: (context) => ReceiveOrderDialog(order: order),
+                                  builder: (context) => ConfirmOrderDialog(order: order),
                                 );
                               } else {
                                 onStatusUpdate(order, newStatus);
                               }
                             },
-                            icon: const Icon(Icons.update),
                           ),
                       ],
                     ),
@@ -179,52 +241,23 @@ class PurchaseOrderList extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusBadge(BuildContext context, String status) {
-    Color color;
+  Color _getStatusColor(String status) {
     switch (status) {
       case 'draft':
-        color = Colors.grey;
-        break;
+        return Colors.grey;
       case 'pending':
-        color = Colors.orange;
-        break;
+        return Colors.orange;
       case 'confirmed':
-        color = Colors.blue;
-        break;
+        return Colors.blue;
       case 'received':
-        color = Colors.green;
-        break;
+        return Colors.green;
       case 'completed':
-        color = Colors.purple;
-        break;
+        return Colors.purple;
       case 'cancelled':
-        color = Colors.red;
-        break;
+        return Colors.red;
       default:
-        color = Colors.grey;
+        return Colors.grey;
     }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.5),
-        ),
-      ),
-      child: Text(
-        status[0].toUpperCase() + status.substring(1),
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w500,
-          fontSize: 14,
-        ),
-      ),
-    );
   }
 
   List<String> _getNextPossibleStatuses(String currentStatus) {
@@ -234,10 +267,9 @@ class PurchaseOrderList extends StatelessWidget {
       case 'pending':
         return ['confirmed', 'cancelled'];
       case 'confirmed':
-        return ['received', 'cancelled'];
+        return ['cancelled']; // Can only be cancelled now, received happens automatically
       case 'received':
-        return ['completed', 'cancelled'];
-      case 'completed':
+        return [];
       case 'cancelled':
         return [];
       default:

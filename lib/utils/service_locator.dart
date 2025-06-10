@@ -14,6 +14,7 @@ import '../blocs/purchase_invoice/purchase_invoice_bloc.dart';
 import '../blocs/sales/sales_order_bloc.dart';
 import '../blocs/users/users_bloc.dart';
 import '../blocs/warehouse/warehouse_bloc.dart';
+import '../blocs/warehouse_documents/warehouse_document_bloc.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/category_repository.dart';
 import '../data/repositories/customer_repository.dart';
@@ -24,6 +25,7 @@ import '../data/repositories/purchase_repository.dart';
 import '../data/repositories/user_repository.dart';
 import '../blocs/auth/auth_bloc.dart';
 import '../blocs/dashboard/dashboard_bloc.dart';
+import '../data/repositories/warehouse_document_repository.dart';
 import '../data/repositories/warehouse_repository.dart';
 
 final GetIt locator = GetIt.instance;
@@ -186,4 +188,12 @@ void setupServiceLocator() {
       purchaseInvoiceRepository: locator<PurchaseInvoiceRepository>(),
     ),
   );
+
+  locator.registerLazySingleton(() => WarehouseDocumentRepository(
+    firestore: locator<FirebaseFirestore>(),
+  ));
+
+  locator.registerFactory(() => WarehouseDocumentBloc(
+    repository: locator<WarehouseDocumentRepository>(),
+  ));
 }

@@ -139,6 +139,12 @@ class SideMenu extends StatelessWidget {
                 isSelected: navigationController.currentRoute == '/categories',
                 onTap: () => navigationController.navigateTo('/categories'),
               ),
+              _MenuItem(
+                icon: Icons.description_outlined,
+                title: 'Warehouse Documents',
+                isSelected: navigationController.currentRoute == '/warehouse-documents',
+                onTap: () => navigationController.navigateTo('/warehouse-documents'),
+              ),
               // Only show warehouses to administrators
               if (user.role == UserRole.administrator.name)
                 _MenuItem(
