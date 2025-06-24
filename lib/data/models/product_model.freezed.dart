@@ -26,6 +26,8 @@ mixin _$ProductModel {
   double get price => throw _privateConstructorUsedError;
   int get quantity => throw _privateConstructorUsedError;
   String? get description => throw _privateConstructorUsedError;
+  String? get sku =>
+      throw _privateConstructorUsedError; // ADD THIS LINE - SKU field
   bool get isActive => throw _privateConstructorUsedError;
   @TimestampConverter()
   DateTime get createdAt => throw _privateConstructorUsedError;
@@ -56,6 +58,7 @@ abstract class $ProductModelCopyWith<$Res> {
       double price,
       int quantity,
       String? description,
+      String? sku,
       bool isActive,
       @TimestampConverter() DateTime createdAt,
       @TimestampConverter() DateTime updatedAt,
@@ -83,6 +86,7 @@ class _$ProductModelCopyWithImpl<$Res, $Val extends ProductModel>
     Object? price = null,
     Object? quantity = null,
     Object? description = freezed,
+    Object? sku = freezed,
     Object? isActive = null,
     Object? createdAt = null,
     Object? updatedAt = null,
@@ -112,6 +116,10 @@ class _$ProductModelCopyWithImpl<$Res, $Val extends ProductModel>
       description: freezed == description
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      sku: freezed == sku
+          ? _value.sku
+          : sku // ignore: cast_nullable_to_non_nullable
               as String?,
       isActive: null == isActive
           ? _value.isActive
@@ -148,6 +156,7 @@ abstract class _$$ProductModelImplCopyWith<$Res>
       double price,
       int quantity,
       String? description,
+      String? sku,
       bool isActive,
       @TimestampConverter() DateTime createdAt,
       @TimestampConverter() DateTime updatedAt,
@@ -173,6 +182,7 @@ class __$$ProductModelImplCopyWithImpl<$Res>
     Object? price = null,
     Object? quantity = null,
     Object? description = freezed,
+    Object? sku = freezed,
     Object? isActive = null,
     Object? createdAt = null,
     Object? updatedAt = null,
@@ -202,6 +212,10 @@ class __$$ProductModelImplCopyWithImpl<$Res>
       description: freezed == description
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      sku: freezed == sku
+          ? _value.sku
+          : sku // ignore: cast_nullable_to_non_nullable
               as String?,
       isActive: null == isActive
           ? _value.isActive
@@ -233,6 +247,7 @@ class _$ProductModelImpl implements _ProductModel {
       required this.price,
       required this.quantity,
       this.description,
+      this.sku,
       required this.isActive,
       @TimestampConverter() required this.createdAt,
       @TimestampConverter() required this.updatedAt,
@@ -255,6 +270,9 @@ class _$ProductModelImpl implements _ProductModel {
   @override
   final String? description;
   @override
+  final String? sku;
+// ADD THIS LINE - SKU field
+  @override
   final bool isActive;
   @override
   @TimestampConverter()
@@ -273,7 +291,7 @@ class _$ProductModelImpl implements _ProductModel {
 
   @override
   String toString() {
-    return 'ProductModel(id: $id, name: $name, category: $category, price: $price, quantity: $quantity, description: $description, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, warehouseStock: $warehouseStock)';
+    return 'ProductModel(id: $id, name: $name, category: $category, price: $price, quantity: $quantity, description: $description, sku: $sku, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, warehouseStock: $warehouseStock)';
   }
 
   @override
@@ -290,6 +308,7 @@ class _$ProductModelImpl implements _ProductModel {
                 other.quantity == quantity) &&
             (identical(other.description, description) ||
                 other.description == description) &&
+            (identical(other.sku, sku) || other.sku == sku) &&
             (identical(other.isActive, isActive) ||
                 other.isActive == isActive) &&
             (identical(other.createdAt, createdAt) ||
@@ -310,6 +329,7 @@ class _$ProductModelImpl implements _ProductModel {
       price,
       quantity,
       description,
+      sku,
       isActive,
       createdAt,
       updatedAt,
@@ -339,6 +359,7 @@ abstract class _ProductModel implements ProductModel {
       required final double price,
       required final int quantity,
       final String? description,
+      final String? sku,
       required final bool isActive,
       @TimestampConverter() required final DateTime createdAt,
       @TimestampConverter() required final DateTime updatedAt,
@@ -359,6 +380,8 @@ abstract class _ProductModel implements ProductModel {
   int get quantity;
   @override
   String? get description;
+  @override
+  String? get sku; // ADD THIS LINE - SKU field
   @override
   bool get isActive;
   @override

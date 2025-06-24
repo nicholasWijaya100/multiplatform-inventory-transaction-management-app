@@ -18,6 +18,7 @@ import '../presentation/screens/reports/stock_report_screen.dart';
 import '../presentation/screens/stock_transfer/stock_transfer_screen.dart';
 import '../presentation/screens/users/user_management_screen.dart';
 import '../presentation/screens/products/product_management_screen.dart';
+import '../presentation/screens/warehouse_documents/warehouse_document_management_screen.dart';
 import '../presentation/screens/warehouses/warehouse_management_screen.dart';
 
 class NavigationController extends ChangeNotifier {
@@ -51,6 +52,8 @@ class NavigationController extends ChangeNotifier {
         return const CategoryManagementScreen();
       case '/warehouses':
         return const WarehouseManagementScreen();
+      case '/warehouse-documents':
+        return const WarehouseDocumentsScreen();
       case '/stock-transfer':
         return const StockTransferScreen();
       case '/reports/stock':

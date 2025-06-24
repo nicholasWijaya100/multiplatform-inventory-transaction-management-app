@@ -318,20 +318,24 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
 
   Widget _buildStatsCards(List<SalesOrderModel> orders, bool isSmallScreen) {
     final totalOrders = orders.length;
-    final totalAmount = orders.fold<double>(
-      0,
-          (sum, order) => sum + order.totalAmount,
-    );
 
-    // Calculate paid vs unpaid stats
-    final paidOrders = orders.where((order) => order.isPaid).length;
-    final paidAmount = orders
+    // Only count delivered orders for total revenue (consistent with bloc)
+    final totalAmount = orders
+        .where((order) => order.status == SalesOrderStatus.delivered.name)
+        .fold<double>(0, (sum, order) => sum + order.totalAmount);
+
+    // Calculate paid vs unpaid stats for delivered orders only
+    final deliveredOrders = orders.where((order) => order.status == SalesOrderStatus.delivered.name).toList();
+    final paidOrders = deliveredOrders.where((order) => order.isPaid).length;
+    final paidAmount = deliveredOrders
         .where((order) => order.isPaid)
         .fold<double>(0, (sum, order) => sum + order.totalAmount);
-    final unpaidAmount = totalAmount - paidAmount;
+    final unpaidAmount = deliveredOrders
+        .where((order) => !order.isPaid)
+        .fold<double>(0, (sum, order) => sum + order.totalAmount);
 
-    // Calculate average order value
-    final avgOrderValue = orders.isNotEmpty ? totalAmount / totalOrders : 0.0;
+    // Calculate average order value for delivered orders only
+    final avgOrderValue = deliveredOrders.isNotEmpty ? totalAmount / deliveredOrders.length : 0.0;
 
     final cards = [
       _StatCard(
@@ -341,7 +345,7 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
         color: Colors.blue[700]!,
       ),
       _StatCard(
-        title: 'Total Revenue',
+        title: 'Delivered Revenue',
         value: Formatters.formatCurrency(totalAmount),
         icon: Icons.attach_money,
         color: Colors.green[600]!,

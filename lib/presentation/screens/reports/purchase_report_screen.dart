@@ -321,25 +321,31 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
 
   Widget _buildStatsCards(List<PurchaseOrderModel> orders, bool isSmallScreen) {
     final totalOrders = orders.length;
-    final totalAmount = orders.fold<double>(
-      0,
-          (sum, order) => sum + order.totalAmount,
-    );
+
+    // Only count received orders for total amount (consistent with bloc)
+    final totalAmount = orders
+        .where((order) => order.status == PurchaseOrderStatus.received.name)
+        .fold<double>(0, (sum, order) => sum + order.totalAmount);
+
     final completedOrders = orders
         .where((order) => order.status == PurchaseOrderStatus.completed.name)
         .length;
     final pendingAmount = orders
         .where((order) =>
     order.status != PurchaseOrderStatus.completed.name &&
-        order.status != PurchaseOrderStatus.cancelled.name)
+        order.status != PurchaseOrderStatus.cancelled.name &&
+        order.status != PurchaseOrderStatus.received.name)
         .fold<double>(0, (sum, order) => sum + order.totalAmount);
 
-    // Calculate paid vs unpaid stats
-    final paidOrders = orders.where((order) => order.isPaid).length;
-    final paidAmount = orders
+    // Calculate paid vs unpaid stats for received orders only
+    final receivedOrders = orders.where((order) => order.status == PurchaseOrderStatus.received.name).toList();
+    final paidOrders = receivedOrders.where((order) => order.isPaid).length;
+    final paidAmount = receivedOrders
         .where((order) => order.isPaid)
         .fold<double>(0, (sum, order) => sum + order.totalAmount);
-    final unpaidAmount = totalAmount - paidAmount;
+    final unpaidAmount = receivedOrders
+        .where((order) => !order.isPaid)
+        .fold<double>(0, (sum, order) => sum + order.totalAmount);
 
     final cards = [
       _StatCard(
@@ -349,7 +355,7 @@ class _PurchaseReportScreenState extends State<PurchaseReportScreen> {
         color: Colors.blue[700]!,
       ),
       _StatCard(
-        title: 'Total Amount',
+        title: 'Received Amount',
         value: Formatters.formatCurrency(totalAmount),
         icon: Icons.attach_money,
         color: Colors.green[600]!,

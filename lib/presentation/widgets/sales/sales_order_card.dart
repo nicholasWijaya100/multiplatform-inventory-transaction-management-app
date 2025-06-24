@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:inventory_app_revised/presentation/widgets/sales/sales_order_details_dialog.dart';
+import 'package:inventory_app_revised/presentation/widgets/sales/ship_order_dialog.dart';
 import '../../../data/models/sales_order_model.dart';
 import '../../../utils/formatter.dart';
 
@@ -95,7 +96,17 @@ class SalesOrderCard extends StatelessWidget {
                           ))
                               .toList();
                         },
-                        onSelected: (newStatus) => onStatusUpdate(order, newStatus),
+                        onSelected: (newStatus) {
+                          // Show warehouse selection dialog for shipping order
+                          if (order.status == 'confirmed' && newStatus == 'shipped') {
+                            showDialog(
+                              context: context,
+                              builder: (_) => ShipOrderDialog(order: order),
+                            );
+                          } else {
+                            onStatusUpdate(order, newStatus);
+                          }
+                        },
                       ),
                     ],
                   ],
@@ -206,7 +217,7 @@ class SalesOrderCard extends StatelessWidget {
       case 'confirmed':
         return ['shipped', 'cancelled'];
       case 'shipped':
-        return ['delivered', 'cancelled'];
+        return []; // Remove all manual transitions - only warehouse documents can change this
       case 'delivered':
       case 'cancelled':
         return [];

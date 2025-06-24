@@ -1,9 +1,15 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../data/models/sales_order_model.dart';
+import '../../data/models/warehouse_document_model.dart';
+import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/customer_repository.dart';
+import '../../data/repositories/product_repository.dart';
 import '../../data/repositories/sales_order_repository.dart';
+import '../../data/repositories/warehouse_document_repository.dart';
+import '../../data/repositories/warehouse_repository.dart';
 import '../../utils/service_locator.dart';
+import '../auth/auth_bloc.dart';
 import '../invoice/invoice_bloc.dart';
 
 // Events
@@ -23,6 +29,17 @@ class SearchSalesOrders extends SalesOrderEvent {
 
   @override
   List<Object?> get props => [query];
+}
+
+class UpdateSalesOrderStatusWithWarehouse extends SalesOrderEvent {
+  final String orderId;
+  final String status;
+  final String warehouseId;
+
+  const UpdateSalesOrderStatusWithWarehouse(this.orderId, this.status, this.warehouseId);
+
+  @override
+  List<Object?> get props => [orderId, status, warehouseId];
 }
 
 class FilterSalesOrdersByCustomer extends SalesOrderEvent {
@@ -155,6 +172,7 @@ class SalesOrderBloc extends Bloc<SalesOrderEvent, SalesOrderState> {
     on<AddSalesOrder>(_onAddSalesOrder);
     on<UpdateSalesOrderStatus>(_onUpdateSalesOrderStatus);
     on<UpdateSalesOrderPaymentStatus>(_onUpdateSalesOrderPaymentStatus);
+    on<UpdateSalesOrderStatusWithWarehouse>(_onUpdateSalesOrderStatusWithWarehouse);
   }
 
   Future<void> _onLoadSalesOrders(
@@ -174,7 +192,11 @@ class SalesOrderBloc extends Bloc<SalesOrderEvent, SalesOrderState> {
           .where((order) => order.status == SalesOrderStatus.pending.name)
           .length
           .toDouble();
-      final totalValue = orders.fold<double>(
+
+      // Update this to only count delivered orders
+      final totalValue = orders
+          .where((order) => order.status == SalesOrderStatus.delivered.name)
+          .fold<double>(
         0,
             (sum, order) => sum + order.totalAmount,
       );
@@ -226,11 +248,11 @@ class SalesOrderBloc extends Bloc<SalesOrderEvent, SalesOrderState> {
       final order = await _salesOrderRepository.addSalesOrder(event.order);
 
       // Update customer purchase stats
-      final customerRepository = locator<CustomerRepository>();
-      await customerRepository.updateCustomerPurchaseStats(
-        order.customerId,
-        order.totalAmount,
-      );
+      // final customerRepository = locator<CustomerRepository>();
+      // await customerRepository.updateCustomerPurchaseStats(
+      //   order.customerId,
+      //   order.totalAmount,
+      // );
 
       add(LoadSalesOrders());
     } catch (e) {
@@ -245,6 +267,89 @@ class SalesOrderBloc extends Bloc<SalesOrderEvent, SalesOrderState> {
       ) async {
     emit(SalesOrderLoading());
     try {
+      // Get the order details first
+      final order = await _salesOrderRepository.getSalesOrder(event.orderId);
+
+      // If changing to delivered status, update customer purchase stats
+      if (event.status == 'delivered') {
+        final customerRepository = locator<CustomerRepository>();
+        await customerRepository.updateCustomerPurchaseStats(
+          order.customerId,
+          order.totalAmount,
+        );
+      }
+
+      // If changing to shipped status, create delivery note
+      if (event.status == 'shipped') {
+        // Get the sales order details
+        final order = await _salesOrderRepository.getSalesOrder(event.orderId);
+
+        // Get warehouse information - you might need to show a dialog to select warehouse
+        // For now, let's assume there's a default warehouse or it's passed with the event
+        final warehouseRepository = locator<WarehouseRepository>();
+        final warehouses = await warehouseRepository.getWarehouses();
+        final defaultWarehouse = warehouses.firstWhere(
+              (w) => w.isActive,
+          orElse: () => throw Exception('No active warehouse found'),
+        );
+
+        // Create delivery note document
+        final warehouseDocumentRepository = locator<WarehouseDocumentRepository>();
+        final authBloc = locator<AuthBloc>();
+        final authState = authBloc.state;
+
+        late final currentUser;
+
+        if (authState is Authenticated) {
+          currentUser = authState.user;
+        } else {
+          // fall back to repo (could still be null-check here)
+          currentUser = await locator<AuthRepository>().getCurrentUser();
+        }
+
+        // Convert sales order items to warehouse document items
+        final documentItems = order.items.map((orderItem) async {
+          final productRepository = locator<ProductRepository>();
+          final product = await productRepository.getProduct(orderItem.productId);
+
+          return WarehouseDocumentItem(
+            productId: orderItem.productId,
+            productName: orderItem.productName,
+            productSku: product.sku ?? orderItem.productId,
+            quantity: orderItem.quantity,
+            unit: 'pcs', // Default unit
+            batchNumber: null,
+            expiryDate: null,
+            notes: orderItem.notes,
+          );
+        }).toList();
+
+        final resolvedItems = await Future.wait(documentItems);
+
+        final deliveryNote = WarehouseDocumentModel(
+          id: '', // Will be set by Firestore
+          documentNumber: '', // Will be generated by repository
+          type: WarehouseDocumentType.deliveryNote,
+          warehouseId: defaultWarehouse.id,
+          warehouseName: defaultWarehouse.name,
+          relatedOrderId: order.id,
+          relatedOrderNumber: order.id,
+          items: resolvedItems,
+          status: WarehouseDocumentStatus.pending,
+          createdBy: currentUser.id,
+          createdAt: DateTime.now(),
+          completedAt: null,
+          notes: 'Auto-generated from Sales Order #${order.id}',
+          metadata: {
+            'customerId': order.customerId,
+            'customerName': order.customerName,
+            'salesOrderTotal': order.totalAmount,
+          },
+        );
+
+        await warehouseDocumentRepository.createDocument(deliveryNote);
+      }
+
       await _salesOrderRepository.updateSalesOrderStatus(
         event.orderId,
         event.status,
@@ -260,6 +365,90 @@ class SalesOrderBloc extends Bloc<SalesOrderEvent, SalesOrderState> {
           print('Error notifying invoice bloc: $e');
         }
       }
+
+      add(LoadSalesOrders());
+    } catch (e) {
+      emit(SalesOrderError(e.toString()));
+      add(LoadSalesOrders());
+    }
+  }
+
+  Future<void> _onUpdateSalesOrderStatusWithWarehouse(
+      UpdateSalesOrderStatusWithWarehouse event,
+      Emitter<SalesOrderState> emit,
+      ) async {
+    emit(SalesOrderLoading());
+    try {
+      // If changing to shipped status, create delivery note with selected warehouse
+      if (event.status == 'shipped') {
+        // Get the sales order details
+        final order = await _salesOrderRepository.getSalesOrder(event.orderId);
+
+        // Get warehouse information
+        final warehouseRepository = locator<WarehouseRepository>();
+        final warehouse = await warehouseRepository.getWarehouse(event.warehouseId);
+
+        // Create delivery note document
+        final warehouseDocumentRepository = locator<WarehouseDocumentRepository>();
+        final authBloc = locator<AuthBloc>();
+        final authState = authBloc.state;
+
+        late final currentUser;
+
+        if (authState is Authenticated) {
+          currentUser = authState.user;
+        } else {
+          currentUser = await locator<AuthRepository>().getCurrentUser();
+        }
+
+        // Convert sales order items to warehouse document items
+        final documentItems = order.items.map((orderItem) async {
+          final productRepository = locator<ProductRepository>();
+          final product = await productRepository.getProduct(orderItem.productId);
+
+          return WarehouseDocumentItem(
+            productId: orderItem.productId,
+            productName: orderItem.productName,
+            productSku: product.sku ?? orderItem.productId,
+            quantity: orderItem.quantity,
+            unit: 'pcs',
+            batchNumber: null,
+            expiryDate: null,
+            notes: orderItem.notes,
+          );
+        }).toList();
+
+        final resolvedItems = await Future.wait(documentItems);
+
+        final deliveryNote = WarehouseDocumentModel(
+          id: '',
+          documentNumber: '',
+          type: WarehouseDocumentType.deliveryNote,
+          warehouseId: event.warehouseId,
+          warehouseName: warehouse.name,
+          relatedOrderId: order.id,
+          relatedOrderNumber: order.id,
+          items: resolvedItems,
+          status: WarehouseDocumentStatus.pending,
+          createdBy: currentUser.id,
+          createdAt: DateTime.now(),
+          completedAt: null,
+          notes: 'Auto-generated from Sales Order #${order.id}',
+          metadata: {
+            'customerId': order.customerId,
+            'customerName': order.customerName,
+            'salesOrderTotal': order.totalAmount,
+          },
+        );
+
+        await warehouseDocumentRepository.createDocument(deliveryNote);
+      }
+
+      // Update sales order status
+      await _salesOrderRepository.updateSalesOrderStatus(
+        event.orderId,
+        event.status,
+      );
 
       add(LoadSalesOrders());
     } catch (e) {
@@ -294,7 +483,7 @@ class SalesOrderBloc extends Bloc<SalesOrderEvent, SalesOrderState> {
       case 'confirmed':
         return ['shipped', 'cancelled'];
       case 'shipped':
-        return ['delivered', 'cancelled'];
+        return []; // Remove all manual transitions - only warehouse documents can change this
       case 'delivered':
       case 'cancelled':
         return [];

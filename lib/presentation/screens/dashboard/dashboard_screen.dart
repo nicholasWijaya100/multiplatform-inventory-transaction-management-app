@@ -626,12 +626,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   if (salesState is SalesOrdersLoaded && purchaseState is PurchaseOrdersLoaded) {
                     // Get the data
                     final filteredSalesOrders = salesState.orders.where((order) {
-                      return order.createdAt.isAfter(_chartDateRange.start) &&
+                      return order.status == 'delivered' &&
+                          order.createdAt.isAfter(_chartDateRange.start) &&
                           order.createdAt.isBefore(_chartDateRange.end.add(const Duration(days: 1)));
                     }).toList();
 
                     final filteredPurchaseOrders = purchaseState.orders.where((order) {
-                      return order.createdAt.isAfter(_chartDateRange.start) &&
+                      return order.status == 'received' &&
+                          order.createdAt.isAfter(_chartDateRange.start) &&
                           order.createdAt.isBefore(_chartDateRange.end.add(const Duration(days: 1)));
                     }).toList();
 

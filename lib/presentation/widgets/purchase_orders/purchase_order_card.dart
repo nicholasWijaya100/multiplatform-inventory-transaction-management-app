@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:inventory_app_revised/presentation/widgets/purchase_orders/purchase_order_details_dialog.dart';
+import 'package:inventory_app_revised/presentation/widgets/purchase_orders/confirm_order_dialog.dart';
 import '../../../data/models/purchase_order_model.dart';
 import '../../../utils/formatter.dart';
 
@@ -109,12 +110,22 @@ class PurchaseOrderCard extends StatelessWidget {
                           return _getNextPossibleStatuses(order.status)
                               .map((status) => PopupMenuItem(
                             value: status,
-                            child: Text(status),
+                            child: Text(
+                              status[0].toUpperCase() + status.substring(1),
+                            ),
                           ))
                               .toList();
                         },
                         onSelected: (newStatus) {
-                          onStatusUpdate(order, newStatus);
+                          // Show warehouse selection dialog for confirming order
+                          if (order.status == 'pending' && newStatus == 'confirmed') {
+                            showDialog(
+                              context: context,
+                              builder: (_) => ConfirmOrderDialog(order: order),
+                            );
+                          } else {
+                            onStatusUpdate(order, newStatus);
+                          }
                         },
                       ),
                     ],
@@ -209,10 +220,9 @@ class PurchaseOrderCard extends StatelessWidget {
       case 'pending':
         return ['confirmed', 'cancelled'];
       case 'confirmed':
-        return ['received', 'cancelled'];
+        return ['cancelled']; // Can only be cancelled now, received happens automatically
       case 'received':
-        return ['completed', 'cancelled'];
-      case 'completed':
+        return [];
       case 'cancelled':
         return [];
       default:

@@ -9,6 +9,25 @@ class SalesOrderRepository {
     FirebaseFirestore? firestore,
   }) : _firestore = firestore ?? FirebaseFirestore.instance;
 
+  Future<SalesOrderModel> getSalesOrder(String orderId) async {
+    try {
+      final docSnapshot = await _firestore
+          .collection('sales_orders')
+          .doc(orderId)
+          .get();
+
+      if (!docSnapshot.exists) {
+        throw Exception('Sales order not found');
+      }
+
+      final data = docSnapshot.data()!;
+      data['id'] = docSnapshot.id;
+      return SalesOrderModel.fromJson(data);
+    } catch (e) {
+      throw Exception('Failed to fetch sales order: ${e.toString()}');
+    }
+  }
+
   Future<List<SalesOrderModel>> getSalesOrders({
     String? searchQuery,
     String? customerFilter,

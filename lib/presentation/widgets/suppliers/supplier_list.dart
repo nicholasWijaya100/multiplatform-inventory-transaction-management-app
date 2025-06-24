@@ -73,20 +73,6 @@ class SupplierList extends StatelessWidget {
                       DataColumn(
                         label: Padding(
                           padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Text('Orders'),
-                        ),
-                        numeric: true,
-                      ),
-                      DataColumn(
-                        label: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Text('Total Value'),
-                        ),
-                        numeric: true,
-                      ),
-                      DataColumn(
-                        label: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
                           child: Text('Status'),
                         ),
                       ),
@@ -172,35 +158,10 @@ class SupplierList extends StatelessWidget {
                                       fontSize: 12,
                                       color: Colors.grey[600],
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
-                              ),
-                            ),
-                          ),
-                          DataCell(
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.blue[50],
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Text(
-                                supplier.totalOrders.toString(),
-                                style: TextStyle(
-                                  color: Colors.blue[700],
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                          DataCell(
-                            Text(
-                              Formatters.formatCurrency(supplier.totalPurchases),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
@@ -215,22 +176,15 @@ class SupplierList extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.edit),
+                                  icon: const Icon(Icons.edit, size: 20),
                                   onPressed: () => onEdit(supplier),
-                                  tooltip: 'Edit Supplier',
+                                  color: Colors.blue[700],
                                 ),
-                                if (supplier.totalOrders == 0)
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.delete_outline,
-                                      color: Colors.red,
-                                    ),
-                                    onPressed: () => _showDeleteConfirmation(
-                                      context,
-                                      supplier,
-                                    ),
-                                    tooltip: 'Delete Supplier',
-                                  ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete, size: 20),
+                                  onPressed: () => _showDeleteConfirmation(context, supplier),
+                                  color: Colors.red[700],
+                                ),
                               ],
                             ),
                           ),
@@ -246,34 +200,29 @@ class SupplierList extends StatelessWidget {
     );
   }
 
-  Future<void> _showDeleteConfirmation(
-      BuildContext context,
-      SupplierModel supplier,
-      ) async {
-    return showDialog(
+  void _showDeleteConfirmation(BuildContext context, SupplierModel supplier) {
+    showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Supplier'),
-          content: Text(
-            'Are you sure you want to delete "${supplier.name}"? This action cannot be undone.',
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Supplier'),
+        content: Text('Are you sure you want to delete ${supplier.name}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              onDelete(supplier);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                onDelete(supplier);
-              },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -285,16 +234,17 @@ class _SupplierCard extends StatelessWidget {
   final Function(SupplierModel) onDelete;
 
   const _SupplierCard({
+    Key? key,
     required this.supplier,
     required this.onEdit,
     required this.onStatusChange,
     required this.onDelete,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 8),
       child: ExpansionTile(
         leading: CircleAvatar(
           backgroundColor: supplier.isActive ? Colors.blue[900] : Colors.grey,
@@ -305,112 +255,69 @@ class _SupplierCard extends StatelessWidget {
         ),
         title: Text(
           supplier.name,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(supplier.city),
+        trailing: Switch(
+          value: supplier.isActive,
+          onChanged: (value) => onStatusChange(supplier, value),
+        ),
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow(
-                  title: 'Contact',
-                  content: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(supplier.phone),
-                      if (supplier.email != null)
-                        Text(
-                          supplier.email!,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 24),
-                _buildInfoRow(
-                  title: 'Location',
-                  content: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(supplier.city),
-                      Text(
-                        supplier.address,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 24),
-                _buildInfoRow(
-                  title: 'Statistics',
-                  content: Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatItem(
-                          label: 'Orders',
-                          value: supplier.totalOrders.toString(),
-                          icon: Icons.shopping_cart_outlined,
-                        ),
-                      ),
-                      Container(
-                        width: 1,
-                        height: 40,
-                        color: Colors.grey[300],
-                      ),
-                      Expanded(
-                        child: _buildStatItem(
-                          label: 'Value',
-                          value: Formatters.formatCurrency(supplier.totalPurchases),
-                          icon: Icons.attach_money,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 24),
-                Row(
-                  children: [
-                    const Text('Status'),
-                    const Spacer(),
-                    Switch(
-                      value: supplier.isActive,
-                      onChanged: (value) => onStatusChange(supplier, value),
+                if (supplier.description != null) ...[
+                  Text(
+                    'Description',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
                     ),
-                  ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(supplier.description!),
+                  const SizedBox(height: 12),
+                ],
+                Text(
+                  'Contact Information',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
                 ),
-                const Divider(height: 24),
+                const SizedBox(height: 4),
+                Text('Phone: ${supplier.phone}'),
+                if (supplier.email != null) Text('Email: ${supplier.email}'),
+                const SizedBox(height: 8),
+                Text(
+                  'Address',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text('${supplier.address}, ${supplier.city}'),
+                const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton.icon(
                       onPressed: () => onEdit(supplier),
-                      icon: const Icon(Icons.edit),
+                      icon: const Icon(Icons.edit, size: 18),
                       label: const Text('Edit'),
                     ),
-                    if (supplier.totalOrders == 0) ...[
-                      const SizedBox(width: 8),
-                      TextButton.icon(
-                        onPressed: () => onDelete(supplier),
-                        icon: const Icon(
-                          Icons.delete_outline,
-                          color: Colors.red,
-                        ),
-                        label: const Text(
-                          'Delete',
-                          style: TextStyle(color: Colors.red),
-                        ),
+                    const SizedBox(width: 8),
+                    TextButton.icon(
+                      onPressed: () => _showDeleteConfirmation(context, supplier),
+                      icon: const Icon(Icons.delete, size: 18),
+                      label: const Text('Delete'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.red,
                       ),
-                    ],
+                    ),
                   ],
                 ),
               ],
@@ -421,61 +328,29 @@ class _SupplierCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow({
-    required String title,
-    required Widget content,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-            fontWeight: FontWeight.w500,
+  void _showDeleteConfirmation(BuildContext context, SupplierModel supplier) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Supplier'),
+        content: Text('Are you sure you want to delete ${supplier.name}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
-        ),
-        const SizedBox(height: 8),
-        content,
-      ],
-    );
-  }
-
-  Widget _buildStatItem({
-    required String label,
-    required String value,
-    required IconData icon,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          icon,
-          color: Colors.blue[700],
-          size: 20,
-        ),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              onDelete(supplier);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
             ),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-      ],
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 }

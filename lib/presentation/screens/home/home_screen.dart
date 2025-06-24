@@ -227,6 +227,8 @@ class _HomeScreenState extends State<HomeScreen> {
         return 'Categories';
       case '/warehouses':
         return 'Warehouse Management';
+      case '/warehouse-documents':
+        return 'Warehouse Documents';
       case '/stock-transfer':
         return 'Stock Transfer';
       case '/reports/sales':
